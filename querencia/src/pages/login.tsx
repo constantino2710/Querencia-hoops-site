@@ -23,7 +23,7 @@ export function Login() {
       setErrorMsg('Erro: E-mail ou senha incorretos.')
     } else {
       // Login deu certo? Manda pro Dashboard!
-      navigate('/dashboard')
+      navigate('/') // ✅ Manda pra raiz, e o App decide
     }
     setLoading(false)
   }
