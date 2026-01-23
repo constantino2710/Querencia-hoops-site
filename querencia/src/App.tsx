@@ -1,18 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './AuthContext'
+
+// ATENÇÃO: Se seus componentes usam "export default", não use chaves { }
 import {Layout} from './layout'
 import {Login} from './pages/login'
 import {Register} from './pages/register'
 
-// Componentes (Seus Placeholders)
-const StudentExplore = () => <h1 className="text-2xl">Explorar Cursos (Área do Aluno)</h1>
-const StudentDash = () => <h1 className="text-2xl">Meu Progresso (Área do Aluno)</h1>
-const TeacherDash = () => <h1 className="text-2xl">Vendas e Ganhos (Área do Professor)</h1>
-const TeacherCourses = () => <h1 className="text-2xl">Meus Cursos (Área do Professor)</h1>
-const TeacherCreate = () => <h1 className="text-2xl">Criar Curso (Área do Professor)</h1>
-const AdminDash = () => <h1 className="text-2xl">Dashboard Admin</h1>
-const AdminTeachers = () => <h1 className="text-2xl">Gestão de Professores</h1>
-const AdminStudents = () => <h1 className="text-2xl">Gestão de Alunos</h1>
+// Componentes Placeholders (Substitua pelos reais quando tiver)
+const StudentExplore = () => <h1 className="text-2xl p-8">Explorar Cursos (Área do Aluno) 🔍</h1>
+const StudentDash = () => <h1 className="text-2xl p-8">Meu Progresso (Área do Aluno) 📊</h1>
+const TeacherDash = () => <h1 className="text-2xl p-8">Vendas e Ganhos (Área do Professor) 💰</h1>
+const TeacherCourses = () => <h1 className="text-2xl p-8">Meus Cursos (Área do Professor) 📚</h1>
+const TeacherCreate = () => <h1 className="text-2xl p-8">Criar Curso (Área do Professor) ➕</h1>
+const AdminDash = () => <h1 className="text-2xl p-8">Dashboard Admin 🛡️</h1>
+const AdminTeachers = () => <h1 className="text-2xl p-8">Gestão de Professores 👨‍🏫</h1>
+const AdminStudents = () => <h1 className="text-2xl p-8">Gestão de Alunos 🎓</h1>
 
 // Componente de Acesso Negado (Melhorado para Debug)
 const Unauthorized = () => {
@@ -25,23 +27,26 @@ const Unauthorized = () => {
         <p>Seus Cargos: {JSON.stringify(userRoles)}</p>
         <p>Página Tentada: {window.location.pathname}</p>
       </div>
-      <a href="/" className="mt-6 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Voltar ao Início</a>
+      <a href="/" className="mt-6 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-bold transition">
+        Voltar ao Início
+      </a>
     </div>
   )
 }
 
-// Redirecionador Inteligente
+// Redirecionador Inteligente: Decide para onde jogar o usuário ao entrar na raiz "/"
 function HomeRedirect() {
-  const { userRoles, loading } = useAuth()
+  const { userRoles, loading, session } = useAuth()
   
-  if (loading) return <div>Carregando...</div>
+  if (loading) return <div className="flex h-screen items-center justify-center">Carregando...</div>
+  if (!session) return <Navigate to="/login" replace />
 
   // Ordem de Prioridade:
   if (userRoles.includes('ADMIN')) return <Navigate to="/admin/dashboard" replace />
   if (userRoles.includes('TEACHER')) return <Navigate to="/teacher/dashboard" replace />
   if (userRoles.includes('STUDENT')) return <Navigate to="/student/dashboard" replace />
   
-  // Se não tiver cargo nenhum (Erro de conta), manda para Unauthorized
+  // Se estiver logado mas sem cargo, manda para Unauthorized ou Login
   return <Navigate to="/unauthorized" replace />
 }
 
@@ -49,7 +54,7 @@ function HomeRedirect() {
 function PrivateRoute({ allowedRoles }: { allowedRoles: string[] }) {
   const { session, userRoles, loading } = useAuth()
 
-  if (loading) return <div>Carregando...</div>
+  if (loading) return <div className="flex h-screen items-center justify-center">Carregando...</div>
   if (!session) return <Navigate to="/login" replace />
 
   // Regra: O usuário precisa ter a role exigida OU ser Admin
@@ -65,16 +70,18 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Rotas Públicas */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
+          {/* Rotas Protegidas (com Layout) */}
           <Route element={<Layout />}>
-            {/* Rota Raiz: Decide para onde jogar o usuário */}
+            
+            {/* Rota Raiz: O HomeRedirect decide para onde você vai */}
             <Route path="/" element={<HomeRedirect />} />
 
             {/* --- ÁREA EXCLUSIVA DE ESTUDANTE --- */}
-            {/* Note: Removi 'TEACHER' daqui. Só Aluno e Admin entram. */}
             <Route element={<PrivateRoute allowedRoles={['STUDENT']} />}>
               <Route path="/student/explore" element={<StudentExplore />} />
               <Route path="/student/dashboard" element={<StudentDash />} />

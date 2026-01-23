@@ -109,7 +109,7 @@ export function Layout() {
             onClick={signOut}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium transition shadow-lg"
           >
-            🚪 Sair
+             Sair
           </button>
         </div>
       </aside>

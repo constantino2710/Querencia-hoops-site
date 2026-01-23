@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) {
+        setLoading(true)
         fetchRoles(session.user.id)
       } else {
         setUserRoles([]) // Limpa roles se deslogar
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // Função robusta para buscar os cargos
-async function fetchRoles(userId: string) {
+  async function fetchRoles(userId: string) {
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -56,17 +57,19 @@ async function fetchRoles(userId: string) {
       if (error) throw error
 
       if (data) {
-        // O .trim() remove espaços invisíveis que quebram a lógica
+        // O .trim() remove espaços invisíveis
         // O .toUpperCase() garante que Teacher vire TEACHER
         const roles = data
           .map((item: any) => item.roles?.name?.trim().toUpperCase()) 
           .filter(Boolean)
           
-        console.log('Roles Limpas:', roles) // Deve aparecer ['TEACHER'] sem espaços
-        setUserRoles(roles)
+        console.log('Roles encontradas e limpas:', roles)
+        
+        // --- ESTA É A LINHA MAIS IMPORTANTE ---
+        setUserRoles(roles) 
       }
     } catch (err) {
-      console.error('Erro:', err)
+      console.error('Erro ao buscar roles:', err)
       setUserRoles([])
     } finally {
       setLoading(false)
@@ -85,6 +88,5 @@ async function fetchRoles(userId: string) {
   )
 }
 
-// --- AQUI ESTÁ A LINHA QUE FALTAVA ---
-// Este hook permite que qualquer componente use: const { userRoles } = useAuth()
+// Hook para usar o contexto
 export const useAuth = () => useContext(AuthContext)
