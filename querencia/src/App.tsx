@@ -1,22 +1,24 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './AuthContext'
 
-// ATENÇÃO: Se seus componentes usam "export default", não use chaves { }
 import {Layout} from './layout'
 import {Login} from './pages/login'
 import {Register} from './pages/register'
 
-// Componentes Placeholders (Substitua pelos reais quando tiver)
-const StudentExplore = () => <h1 className="text-2xl p-8">Explorar Cursos (Área do Aluno) 🔍</h1>
-const StudentDash = () => <h1 className="text-2xl p-8">Meu Progresso (Área do Aluno) 📊</h1>
-const TeacherDash = () => <h1 className="text-2xl p-8">Vendas e Ganhos (Área do Professor) 💰</h1>
-const TeacherCourses = () => <h1 className="text-2xl p-8">Meus Cursos (Área do Professor) 📚</h1>
-const TeacherCreate = () => <h1 className="text-2xl p-8">Criar Curso (Área do Professor) ➕</h1>
-const AdminDash = () => <h1 className="text-2xl p-8">Dashboard Admin 🛡️</h1>
-const AdminTeachers = () => <h1 className="text-2xl p-8">Gestão de Professores 👨‍🏫</h1>
-const AdminStudents = () => <h1 className="text-2xl p-8">Gestão de Alunos 🎓</h1>
+// --- IMPORTAÇÕES DAS NOVAS PÁGINAS ---
+// Aluno
+import StudentExplore from './pages/student/StudentExplore'
+import StudentDashboard from './pages/student/StudentDashboard'
 
-// Componente de Acesso Negado (Melhorado para Debug)
+// Professor
+import TeacherDashboard from './pages/teacher/TeacherDashboard'
+import TeacherCourses from './pages/teacher/TeacherCourses'
+// Admin
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminTeachers from './pages/admin/AdminTeachers'
+import AdminStudents from './pages/admin/AdminStudents'
+
+// Componente de Acesso Negado
 const Unauthorized = () => {
   const { userRoles } = useAuth()
   return (
@@ -34,7 +36,7 @@ const Unauthorized = () => {
   )
 }
 
-// Redirecionador Inteligente: Decide para onde jogar o usuário ao entrar na raiz "/"
+// Redirecionador Inteligente
 function HomeRedirect() {
   const { userRoles, loading, session } = useAuth()
   
@@ -46,7 +48,6 @@ function HomeRedirect() {
   if (userRoles.includes('TEACHER')) return <Navigate to="/teacher/dashboard" replace />
   if (userRoles.includes('STUDENT')) return <Navigate to="/student/dashboard" replace />
   
-  // Se estiver logado mas sem cargo, manda para Unauthorized ou Login
   return <Navigate to="/unauthorized" replace />
 }
 
@@ -57,7 +58,6 @@ function PrivateRoute({ allowedRoles }: { allowedRoles: string[] }) {
   if (loading) return <div className="flex h-screen items-center justify-center">Carregando...</div>
   if (!session) return <Navigate to="/login" replace />
 
-  // Regra: O usuário precisa ter a role exigida OU ser Admin
   const hasPermission = allowedRoles.some(role => userRoles.includes(role)) || userRoles.includes('ADMIN')
   
   if (!hasPermission) return <Navigate to="/unauthorized" replace />
@@ -75,28 +75,26 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* Rotas Protegidas (com Layout) */}
+          {/* Rotas Protegidas (Layout com Sidebar) */}
           <Route element={<Layout />}>
             
-            {/* Rota Raiz: O HomeRedirect decide para onde você vai */}
+            {/* Rota Raiz: Redireciona para o dashboard correto */}
             <Route path="/" element={<HomeRedirect />} />
 
-            {/* --- ÁREA EXCLUSIVA DE ESTUDANTE --- */}
+            {/* --- ROTAS DO ALUNO --- */}
             <Route element={<PrivateRoute allowedRoles={['STUDENT']} />}>
               <Route path="/student/explore" element={<StudentExplore />} />
-              <Route path="/student/dashboard" element={<StudentDash />} />
+              <Route path="/student/dashboard" element={<StudentDashboard />} />
             </Route>
 
-            {/* --- ÁREA EXCLUSIVA DE PROFESSOR --- */}
+            {/* --- ROTAS DO PROFESSOR --- */}
             <Route element={<PrivateRoute allowedRoles={['TEACHER']} />}>
-              <Route path="/teacher/dashboard" element={<TeacherDash />} />
-              <Route path="/teacher/courses" element={<TeacherCourses />} />
-              <Route path="/teacher/create" element={<TeacherCreate />} />
-            </Route>
+              <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+              <Route path="/teacher/courses" element={<TeacherCourses />} />            </Route>
 
-            {/* --- ÁREA EXCLUSIVA DE ADMIN --- */}
+            {/* --- ROTAS DO ADMIN --- */}
             <Route element={<PrivateRoute allowedRoles={['ADMIN']} />}>
-              <Route path="/admin/dashboard" element={<AdminDash />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/teachers" element={<AdminTeachers />} />
               <Route path="/admin/students" element={<AdminStudents />} />
             </Route>

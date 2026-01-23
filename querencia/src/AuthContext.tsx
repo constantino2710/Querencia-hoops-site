@@ -62,9 +62,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const roles = data
           .map((item: any) => item.roles?.name?.trim().toUpperCase()) 
           .filter(Boolean)
-          
-        console.log('Roles encontradas e limpas:', roles)
-        
         // --- ESTA É A LINHA MAIS IMPORTANTE ---
         setUserRoles(roles) 
       }

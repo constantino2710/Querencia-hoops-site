@@ -1,127 +1,123 @@
 import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-
-type RoleOption = 'STUDENT' | 'TEACHER'
+import { useTheme } from '../ThemeContext' // <--- Importe o tema
 
 export function Register() {
-  const [role, setRole] = useState<RoleOption>('STUDENT')
+  const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme() // <--- Hook do tema
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setMsg('')
+    setErrorMsg('')
 
-    const { error } = await supabase.auth.signUp({
+    // 1. Cria o usuário no Auth
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          full_name: name,
-          intended_role: role,
+          display_name: name, // Envia o nome como metadado
         },
       },
     })
 
     if (error) {
-      setMsg(`Erro: ${error.message}`)
-    } else {
-      setMsg('Verifique seu e-mail para confirmar o cadastro!')
+      setErrorMsg(error.message)
+      setLoading(false)
+      return
     }
-    setLoading(false)
+
+    // 2. Tenta atualizar o perfil público (caso o Trigger falhe ou demore)
+    if (data.user) {
+      await supabase
+        .from('users')
+        .update({ name: name })
+        .eq('id', data.user.id)
+    }
+
+    alert('Cadastro realizado! Você já pode entrar.')
+    navigate('/')
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">Crie sua conta</h1>
+    <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-300 relative">
+      
+      {/* BOTÃO DE TEMA */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 p-2 rounded-full bg-surface border border-border text-text-primary hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        title="Trocar Tema"
+      >
+        {theme === 'light' ? '🌙' : '☀️'}
+      </button>
 
-        {/* Botões de Seleção */}
-        <div className="flex gap-4 mb-6">
-          <button
-            type="button"
-            onClick={() => setRole('STUDENT')}
-            className={`flex-1 py-3 px-4 rounded-md font-medium transition-colors ${
-              role === 'STUDENT' 
-                ? 'bg-blue-600 text-white shadow-md' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            👨‍🎓 Sou Aluno
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole('TEACHER')}
-            className={`flex-1 py-3 px-4 rounded-md font-medium transition-colors ${
-              role === 'TEACHER' 
-                ? 'bg-blue-600 text-white shadow-md' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            👨‍🏫 Sou Professor
-          </button>
-        </div>
+      {/* CARD DE REGISTRO */}
+      <div className="bg-surface p-8 rounded-lg shadow-md border border-border w-full max-w-md transition-colors duration-300">
+        <h1 className="text-2xl font-bold mb-6 text-center text-text-primary">Crie sua Conta</h1>
+
+        {errorMsg && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+            {errorMsg}
+          </div>
+        )}
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+            <label className="block mb-1 text-sm font-medium text-text-secondary">Nome Completo</label>
             <input
               type="text"
+              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              placeholder="Ex: João da Silva"
             />
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+            <label className="block mb-1 text-sm font-medium text-text-secondary">E-mail</label>
             <input
               type="email"
+              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              placeholder="seu@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <label className="block mb-1 text-sm font-medium text-text-secondary">Senha</label>
             <input
               type="password"
+              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              placeholder="********"
+              minLength={6}
             />
           </div>
-          <div>
-            já tem uma conta? <a href="/login" className="text-blue-600 hover:underline">Faça login</a>
-          </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded transition-colors disabled:opacity-50"
           >
-            {loading ? 'Criando conta...' : 'Cadastrar'}
+            {loading ? 'Cadastrando...' : 'Criar Conta'}
           </button>
         </form>
 
-        {msg && (
-          <div className={`mt-4 p-3 rounded-md text-sm text-center ${
-            msg.startsWith('Erro') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
-          }`}>
-            {msg}
-          </div>
-        )}
+        <p className="mt-4 text-center text-sm text-text-secondary">
+          Já tem uma conta?{' '}
+          <Link to="/login" className="text-blue-500 hover:underline">
+            Faça Login
+          </Link>
+        </p>
       </div>
     </div>
   )

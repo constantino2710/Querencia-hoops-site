@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-import { Link, useNavigate } from 'react-router-dom'
+import { useTheme } from '../ThemeContext' // <--- Importe o tema
 
 export function Login() {
   const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme() // <--- Hook do tema
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,65 +22,73 @@ export function Login() {
     })
 
     if (error) {
-      setErrorMsg('Erro: E-mail ou senha incorretos.')
+      setErrorMsg(error.message)
+      setLoading(false)
     } else {
-      // Login deu certo? Manda pro Dashboard!
-      navigate('/') // ✅ Manda pra raiz, e o App decide
+      navigate('/')
     }
-    setLoading(false)
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">Acesse sua conta</h1>
+    <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-300 relative">
+      
+      {/* BOTÃO DE TEMA (Canto Superior Direito) */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 p-2 rounded-full bg-surface border border-border text-text-primary hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        title="Trocar Tema"
+      >
+        {theme === 'light' ? '🌙' : '☀️'}
+      </button>
+
+      {/* CARD DE LOGIN */}
+      <div className="bg-surface p-8 rounded-lg shadow-md border border-border w-full max-w-md transition-colors duration-300">
+        <h1 className="text-2xl font-bold mb-6 text-center text-text-primary">Entrar no Sistema</h1>
+
+        {errorMsg && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+            {errorMsg}
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+            <label className="block mb-1 text-sm font-medium text-text-secondary">E-mail</label>
             <input
               type="email"
+              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="seu@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <label className="block mb-1 text-sm font-medium text-text-secondary">Senha</label>
             <input
               type="password"
+              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="********"
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition-colors disabled:opacity-50"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
-        {errorMsg && (
-          <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md text-sm text-center">
-            {errorMsg}
-          </div>
-        )}
-
-        <div className="mt-6 text-center text-sm">
-          <span className="text-gray-600">Não tem conta? </span>
-          <Link to="/register" className="text-blue-600 font-medium hover:underline">
+        <p className="mt-4 text-center text-sm text-text-secondary">
+          Não tem uma conta?{' '}
+          <Link to="/register" className="text-blue-500 hover:underline">
             Cadastre-se
           </Link>
-        </div>
+        </p>
       </div>
     </div>
   )

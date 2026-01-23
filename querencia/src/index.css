@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* --- MODO CLARO (LIGHT) --- */
+    --background: 243 244 246; /* cinza-100 (bg-gray-100) */
+    --surface: 255 255 255;    /* branco (bg-white) */
+    --text-primary: 31 41 55;  /* cinza-800 */
+    --text-secondary: 75 85 99;/* cinza-600 */
+    --border: 229 231 235;     /* cinza-200 */
+    
+    /* Sidebar Claro */
+    --sidebar-bg: 17 24 39;    /* cinza-900 (padrão escuro) */
+    --sidebar-text: 255 255 255;
+  }
+
+  .dark {
+    /* --- MODO ESCURO (DARK) --- */
+    --background: 17 24 39;    /* cinza-900 */
+    --surface: 31 41 55;       /* cinza-800 */
+    --text-primary: 243 244 246; /* cinza-100 */
+    --text-secondary: 156 163 175; /* cinza-400 */
+    --border: 55 65 81;        /* cinza-700 */
+
+    /* Sidebar Escuro (pode ser igual ou mais clara) */
+    --sidebar-bg: 0 0 0;       /* preto total */
+    --sidebar-text: 229 231 235;
+  }
+}
+
+/* Aplicando as cores base automaticamente */
+body {
+  @apply bg-background text-text-primary transition-colors duration-300;
+}
