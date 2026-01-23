@@ -8,7 +8,7 @@ export default function TeacherCourses() {
         
         {/* Botão com cor fixa (azul) que se destaca em ambos os temas */}
         <Link 
-          to="/teacher/create" 
+          to="/teacher/Create" 
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition-colors"
         >
           + Novo Curso

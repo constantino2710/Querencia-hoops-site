@@ -13,6 +13,7 @@ import StudentDashboard from './pages/student/StudentDashboard'
 // Professor
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
 import TeacherCourses from './pages/teacher/TeacherCourses'
+import TeacherCreateCourse from './pages/teacher/TeacherCreateCourse'
 // Admin
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminTeachers from './pages/admin/AdminTeachers'
@@ -90,7 +91,9 @@ export default function App() {
             {/* --- ROTAS DO PROFESSOR --- */}
             <Route element={<PrivateRoute allowedRoles={['TEACHER']} />}>
               <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-              <Route path="/teacher/courses" element={<TeacherCourses />} />            </Route>
+              <Route path="/teacher/courses" element={<TeacherCourses />} />            
+              <Route path="/teacher/Create" element={<TeacherCreateCourse />} />
+              </Route>
 
             {/* --- ROTAS DO ADMIN --- */}
             <Route element={<PrivateRoute allowedRoles={['ADMIN']} />}>
