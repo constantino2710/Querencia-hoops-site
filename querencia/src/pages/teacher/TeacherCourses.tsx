@@ -61,7 +61,7 @@ export default function TeacherCourses() {
     <div className="flex flex-col h-[calc(100dvh-6rem)] w-full">
       
       {/* Controles do Topo */}
-      <div className="mb-4 shrink-0 px-1 w-full">
+      <div className="mb-4 shrink-0 w-full">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
           
           {/* USANDO O COMPONENTE NOVO */}

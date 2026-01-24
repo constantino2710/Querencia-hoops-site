@@ -1,24 +1,28 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './AuthContext'
+import { ThemeProvider } from './ThemeContext' // <--- IMPORTANTE: Adicionado
 
-import {Layout} from './layout'
-import {Login} from './pages/login'
-import {Register} from './pages/register'
+import { Layout } from './layout'
+import { Login } from './pages/login'
+import { Register } from './pages/register'
 
-// --- IMPORTAÇÕES DAS NOVAS PÁGINAS ---
-// Aluno
+// --- PÁGINAS DO ALUNO ---
 import StudentExplore from './pages/student/StudentExplore'
 import StudentDashboard from './pages/student/StudentDashboard'
+import StudentCourseDetails from './pages/student/studentCourseDetails'
 
-// Professor
+// --- PÁGINAS DO PROFESSOR ---
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
 import TeacherCourses from './pages/teacher/TeacherCourses'
 import TeacherCreateCourse from './pages/teacher/TeacherCreateCourse'
-// Admin
+
+// --- PÁGINAS DO ADMIN ---
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminTeachers from './pages/admin/AdminTeachers'
 import AdminStudents from './pages/admin/AdminStudents'
-import StudentCourseDetails from './pages/student/studentCourseDetails'
+
+// --- PÁGINA DE PERFIL (COMUM) ---
+import ProfileSettings from './pages/ProfileSetings'
 
 // Componente de Acesso Negado
 const Unauthorized = () => {
@@ -38,28 +42,29 @@ const Unauthorized = () => {
   )
 }
 
-// Redirecionador Inteligente
+// Redirecionador Inteligente (Rota /)
 function HomeRedirect() {
   const { userRoles, loading, session } = useAuth()
   
   if (loading) return <div className="flex h-screen items-center justify-center">Carregando...</div>
   if (!session) return <Navigate to="/login" replace />
 
-  // Ordem de Prioridade:
+  // Prioridade de Redirecionamento
   if (userRoles.includes('ADMIN')) return <Navigate to="/admin/dashboard" replace />
   if (userRoles.includes('TEACHER')) return <Navigate to="/teacher/dashboard" replace />
-  if (userRoles.includes('STUDENT')) return <Navigate to="/student/dashboard" replace />
+  if (userRoles.includes('STUDENT')) return <Navigate to="/student/explore" replace /> // Ajustado para Explore
   
   return <Navigate to="/unauthorized" replace />
 }
 
-// Proteção de Rota
+// Proteção de Rota por Role
 function PrivateRoute({ allowedRoles }: { allowedRoles: string[] }) {
   const { session, userRoles, loading } = useAuth()
 
   if (loading) return <div className="flex h-screen items-center justify-center">Carregando...</div>
   if (!session) return <Navigate to="/login" replace />
 
+  // Verifica se o usuário tem ALGUMA das roles permitidas
   const hasPermission = allowedRoles.some(role => userRoles.includes(role)) || userRoles.includes('ADMIN')
   
   if (!hasPermission) return <Navigate to="/unauthorized" replace />
@@ -69,44 +74,54 @@ function PrivateRoute({ allowedRoles }: { allowedRoles: string[] }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Rotas Públicas */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-
-          {/* Rotas Protegidas (Layout com Sidebar) */}
-          <Route element={<Layout />}>
+    <BrowserRouter>
+      <ThemeProvider> {/* Provedor de Tema envolvendo a aplicação */}
+        <AuthProvider>
+          <Routes>
             
-            {/* Rota Raiz: Redireciona para o dashboard correto */}
-            <Route path="/" element={<HomeRedirect />} />
+            {/* --- ROTAS PÚBLICAS --- */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* --- ROTAS DO ALUNO --- */}
-            <Route element={<PrivateRoute allowedRoles={['STUDENT']} />}>
-              <Route path="/student/explore" element={<StudentExplore />} />
-              <Route path="/student/dashboard" element={<StudentDashboard />} />
-              <Route path="/student/courses/:id" element={<StudentCourseDetails />} />
-            </Route>
+            {/* --- ROTAS PROTEGIDAS (COM SIDEBAR/LAYOUT) --- */}
+            <Route element={<Layout />}>
+              
+              {/* Rota Raiz */}
+              <Route path="/" element={<HomeRedirect />} />
 
-            {/* --- ROTAS DO PROFESSOR --- */}
-            <Route element={<PrivateRoute allowedRoles={['TEACHER']} />}>
-              <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-              <Route path="/teacher/courses" element={<TeacherCourses />} />            
-              <Route path="/teacher/Create" element={<TeacherCreateCourse />} />
+              {/* ROTA COMUM: PERFIL (Acessível para todos os logados) */}
+              <Route element={<PrivateRoute allowedRoles={['STUDENT', 'TEACHER', 'ADMIN']} />}>
+                 <Route path="/profile" element={<ProfileSettings />} />
               </Route>
 
-            {/* --- ROTAS DO ADMIN --- */}
-            <Route element={<PrivateRoute allowedRoles={['ADMIN']} />}>
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/teachers" element={<AdminTeachers />} />
-              <Route path="/admin/students" element={<AdminStudents />} />
-            </Route>
+              {/* --- ALUNO --- */}
+              <Route element={<PrivateRoute allowedRoles={['STUDENT']} />}>
+                <Route path="/student/explore" element={<StudentExplore />} />
+                <Route path="/student/dashboard" element={<StudentDashboard />} />
+                <Route path="/student/courses/:id" element={<StudentCourseDetails />} />
+              </Route>
 
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+              {/* --- PROFESSOR --- */}
+              <Route element={<PrivateRoute allowedRoles={['TEACHER']} />}>
+                <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+                <Route path="/teacher/courses" element={<TeacherCourses />} />            
+                <Route path="/teacher/create" element={<TeacherCreateCourse />} />
+                {/* Rota de Edição (Importante para o botão Gerenciar) */}
+                <Route path="/teacher/courses/:id/edit" element={<TeacherCreateCourse />} />
+              </Route>
+
+              {/* --- ADMIN --- */}
+              <Route element={<PrivateRoute allowedRoles={['ADMIN']} />}>
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/teachers" element={<AdminTeachers />} />
+                <Route path="/admin/students" element={<AdminStudents />} />
+              </Route>
+
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   )
 }
