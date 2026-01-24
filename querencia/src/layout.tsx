@@ -9,7 +9,7 @@ export function Layout() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
-        <main className="flex-1 overflow-auto p-8 relative">
+        <main className="flex-1 overflow-auto p-4 relative">
           <Outlet />
         </main>
       </div>

@@ -1,221 +1,287 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { useAuth } from '../../AuthContext'
+import { getCategoryIcon } from '../../utils/categoryHelper'
+
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
 
 export default function TeacherCreateCourse() {
   const navigate = useNavigate()
   const { session } = useAuth()
   
-  const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false) // Estado para o upload
+  // Estados do formulário
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [price, setPrice] = useState('')
+  const [categoryId, setCategoryId] = useState('')
   
-  // Estado separado para o arquivo selecionado
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  // Estado da Imagem
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  
+  // Dados auxiliares
+  const [categories, setCategories] = useState<Category[]>([])
+  
+  // Estados de controle
+  const [loading, setLoading] = useState(false)
+  const [fetchingCategories, setFetchingCategories] = useState(true)
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '',
-  })
+  // 1. Buscar categorias ao carregar
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name')
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  // Função que roda quando o usuário escolhe um arquivo
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setSelectedFile(file)
-      // Cria uma URL temporária só para mostrar o preview na tela
-      setPreviewUrl(URL.createObjectURL(file))
+        if (error) throw error
+        if (data) setCategories(data)
+      } catch (error) {
+        console.error('Erro ao buscar categorias:', error)
+      } finally {
+        setFetchingCategories(false)
+      }
     }
+
+    fetchCategories()
+  }, [])
+
+  // 2. Lidar com a seleção de arquivo (Preview)
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files || e.target.files.length === 0) {
+      setImageFile(null)
+      setImagePreview(null)
+      return
+    }
+
+    const file = e.target.files[0]
+    setImageFile(file)
+    // Cria uma URL temporária para mostrar a imagem antes do upload
+    setImagePreview(URL.createObjectURL(file))
   }
 
-  // Função auxiliar para fazer o upload da imagem
-  const uploadImage = async (file: File): Promise<string | null> => {
+  // 3. Função de Upload da Imagem para o Storage
+  async function uploadImage(file: File): Promise<string | null> {
     try {
-      setUploading(true)
-      
-      // Cria um nome único para o arquivo: ID_DO_USER/TIMESTAMP_NOME
       const fileExt = file.name.split('.').pop()
-      const fileName = `${session!.user.id}/${Date.now()}.${fileExt}`
-      const filePath = `${fileName}`
+      const fileName = `${Math.random()}-${Date.now()}.${fileExt}`
+      const filePath = `${session?.user.id}/${fileName}`
 
       const { error: uploadError } = await supabase.storage
-        .from('course-thumbnails') // Nome do Bucket que criamos no SQL
+        .from('course-thumbnails')
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
-      // Pega a URL pública
       const { data } = supabase.storage
         .from('course-thumbnails')
         .getPublicUrl(filePath)
 
       return data.publicUrl
     } catch (error) {
-      console.error('Erro no upload:', error)
-      alert('Erro ao fazer upload da imagem.')
+      console.error('Erro no upload da imagem:', error)
       return null
-    } finally {
-      setUploading(false)
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // 4. Submit do Formulário
+  async function handleCreateCourse(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
-
     if (!session?.user) return
 
-    try {
-      let finalThumbnailUrl = ''
+    if (!categoryId) {
+      alert('Por favor, selecione uma categoria.')
+      return
+    }
 
-      // 1. Se tiver arquivo selecionado, faz o upload primeiro
-      if (selectedFile) {
-        const uploadedUrl = await uploadImage(selectedFile)
-        if (uploadedUrl) finalThumbnailUrl = uploadedUrl
+    try {
+      setLoading(true)
+
+      // a) Faz o upload da imagem se houver
+      let thumbnailUrl = null
+      if (imageFile) {
+        thumbnailUrl = await uploadImage(imageFile)
       }
 
-      // 2. Prepara o preço
-      const priceFloat = parseFloat(formData.price.replace(',', '.')) || 0
-      const priceInCents = Math.round(priceFloat * 100)
+      // b) Converte preço
+      const priceInCents = Math.round(Number(price) * 100)
 
-      // 3. Salva no Banco de Dados
-      const { error } = await supabase
+      // c) Salva no banco
+      const { data, error } = await supabase
         .from('courses')
         .insert({
-          title: formData.title,
-          description: formData.description,
+          title,
+          description,
           price_cents: priceInCents,
-          thumbnail_url: finalThumbnailUrl, // Salva a URL gerada pelo Supabase
+          category_id: categoryId,
           teacher_id: session.user.id,
+          thumbnail_url: thumbnailUrl, // Salva a URL da imagem
           status: 'DRAFT'
         })
+        .select()
+        .single()
 
       if (error) throw error
 
-      navigate('/teacher/courses')
-
-    } catch (error: any) {
-      alert('Erro ao criar curso: ' + error.message)
+      // Redireciona
+      navigate(`/teacher/courses/${data.id}/edit`) // Ou para /teacher/courses
+      
+    } catch (error) {
+      console.error('Erro ao criar curso:', error)
+      alert('Erro ao criar o curso. Tente novamente.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="bg-surface p-8 rounded-lg shadow-sm border border-border transition-colors duration-300">
-        
-        <h2 className="text-2xl font-bold text-text-primary mb-2">Criar Novo Curso</h2>
-        <p className="text-text-secondary mb-8">
-          Preencha as informações abaixo.
+    <div className="max-w-3xl mx-auto p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-text-primary">Novo Curso</h1>
+        <p className="text-text-secondary mt-2">
+          Preencha as informações básicas e adicione uma capa atraente.
         </p>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
-          {/* UPLOAD DE IMAGEM */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Capa do Curso</label>
-            
-            <div className="flex items-start gap-4">
-              {/* Preview da Imagem */}
-              <div className="w-32 h-20 bg-gray-100 dark:bg-gray-800 border border-border rounded overflow-hidden flex items-center justify-center">
-                {previewUrl ? (
-                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xs text-text-secondary">Sem imagem</span>
-                )}
-              </div>
+      </div>
 
-              {/* Input de Arquivo */}
-              <div className="flex-1">
-                <input 
-                  type="file" 
-                  accept="image/*" // Só aceita imagens
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-text-secondary
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100
-                    cursor-pointer"
-                />
-                <p className="text-xs text-text-secondary mt-1">PNG, JPG ou GIF até 2MB.</p>
+      <form onSubmit={handleCreateCourse} className="bg-surface border border-border rounded-xl p-6 shadow-sm space-y-6">
+        
+        {/* Título */}
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1">Título do Curso</label>
+          <input
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            placeholder="Ex: Dominando o Drible"
+          />
+        </div>
+
+        {/* Categoria */}
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1">Categoria</label>
+          <div className="relative">
+            <select
+              required
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              disabled={fetchingCategories}
+              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+            >
+              <option value="" disabled>Selecione uma categoria...</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            {categoryId && (
+              <div className="absolute right-10 top-2 pointer-events-none">
+                {getCategoryIcon(categories.find(c => c.id === categoryId)?.slug)}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* --- UPLOAD DE IMAGEM (Restaurado) --- */}
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-2">Capa do Curso</label>
+          
+          <div className="flex items-start gap-4">
+            {/* Área de Preview */}
+            <div className={`w-40 h-24 rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-background relative ${!imagePreview ? 'text-text-secondary' : ''}`}>
+              {imagePreview ? (
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs text-center px-2">Sem imagem</span>
+              )}
+            </div>
+
+            {/* Input de Arquivo */}
+            <div className="flex-1">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="block w-full text-sm text-text-secondary
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100
+                  dark:file:bg-blue-900/30 dark:file:text-blue-300
+                  cursor-pointer"
+              />
+              <p className="text-xs text-text-secondary mt-2">
+                Recomendado: 1280x720px (16:9). JPG ou PNG.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* TÍTULO */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Título do Curso</label>
-            <input 
-              name="title"
-              type="text" 
-              required
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full p-3 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
-              placeholder="Ex: Introdução ao Marketing Digital" 
-            />
-          </div>
-
-          {/* PREÇO */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Preço (R$)</label>
-            <input 
-              name="price"
-              type="number" 
-              step="0.01"
-              required
-              value={formData.price}
-              onChange={handleChange}
-              className="w-full p-3 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
-              placeholder="0.00" 
-            />
-          </div>
-
-          {/* DESCRIÇÃO */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Descrição Detalhada</label>
-            <textarea 
-              name="description"
-              required
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full p-3 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors h-40 resize-y"
-              placeholder="O que os alunos vão aprender neste curso?"
-            ></textarea>
-          </div>
-
-          {/* BOTÕES */}
-          <div className="flex gap-4 pt-4">
-            <button 
-              type="button"
-              onClick={() => navigate('/teacher/courses')}
-              className="px-6 py-3 rounded border border-border text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              Cancelar
-            </button>
+        {/* Preço e Descrição */}
+        <div className="grid grid-cols-1 gap-6">
+            <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">Preço (R$)</label>
+                <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="0.00"
+                />
+            </div>
             
-            <button 
-              type="submit" 
-              disabled={loading || uploading}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {(loading || uploading) ? 'Enviando...' : 'Salvar Curso'}
-            </button>
-          </div>
+            <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">Descrição</label>
+                <textarea
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    placeholder="Descreva o que será ensinado..."
+                />
+            </div>
+        </div>
 
-        </form>
-      </div>
+        {/* Botões */}
+        <div className="flex items-center justify-end gap-4 pt-4 border-t border-border">
+          <button
+            type="button"
+            onClick={() => navigate('/teacher/courses')}
+            className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors"
+          >
+            Cancelar
+          </button>
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className={`px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 ${
+              loading ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Salvando...
+              </>
+            ) : (
+              'Criar Curso'
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
