@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../AuthContext'
@@ -19,55 +20,67 @@ export default function ProfileSettings() {
     type: 'success' | 'error'
   } | null>(null)
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais do metadados da sessão e do banco de dados
   useEffect(() => {
     if (session?.user) {
-      const { user_metadata, email } = session.user
-      setName(user_metadata.name || '')
-      setEmail(email || '')
-      setAvatarUrl(user_metadata.avatar_url || null)
+      const { user_metadata, email: userEmail } = session.user
+      setName(user_metadata?.name || '')
+      setEmail(userEmail || '')
+      setAvatarUrl(user_metadata?.avatar_url || null)
     }
   }, [session])
 
-  // Função auxiliar para mostrar notificação
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type })
-    // Some após 3 segundos
-    setTimeout(() => {
-      setNotification(null)
-    }, 3000)
+    setTimeout(() => setNotification(null), 3000)
   }
 
-  // Upload de Imagem
-  async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
-    try {
-      setUploading(true)
-      if (!event.target.files || event.target.files.length === 0) return
+  // Upload de Imagem CORRIGIDO
+// src/pages/ProfileSetings.tsx
 
-      const file = event.target.files[0]
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${session?.user.id}-${Math.random()}.${fileExt}`
-      const filePath = `${fileName}`
+async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  try {
+    setUploading(true)
+    if (!event.target.files || event.target.files.length === 0) return
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
+    const file = event.target.files[0]
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${session?.user.id}-${Math.random()}.${fileExt}`
+    const filePath = `${fileName}`
 
-      if (uploadError) throw uploadError
+    // 1. Upload para o Storage
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file)
 
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
-      setAvatarUrl(data.publicUrl)
-      showNotification('Foto carregada! Clique em Salvar.', 'success')
+    if (uploadError) throw uploadError
+
+    // 2. Obter a URL Pública
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
+    const publicUrl = data.publicUrl
+    
+    // 3. ATUALIZAÇÃO IMEDIATA NO BANCO (Garante que não fique null)
+    if (session?.user.id) {
+      const { error: dbUpdateError } = await supabase
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', session.user.id)
       
-    } catch (error) {
-      showNotification('Erro ao fazer upload da imagem.', 'error')
-      console.error(error)
-    } finally {
-      setUploading(false)
+      if (dbUpdateError) throw dbUpdateError
     }
-  }
 
-  // Salvar Perfil
+    setAvatarUrl(publicUrl)
+    showNotification('Foto atualizada com sucesso!', 'success')
+    
+  } catch (error: any) {
+    showNotification('Erro ao processar imagem.', 'error')
+    console.error('Erro no upload:', error.message)
+  } finally {
+    setUploading(false)
+  }
+}
+
+  // Salvar Perfil Completo
   async function handleUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -75,13 +88,13 @@ export default function ProfileSettings() {
     try {
       if (!session?.user) throw new Error('Usuário não logado')
 
-      // 1. Atualiza Auth
+      // 1. Atualiza os metadados do Auth (Sessão)
       const { error: authError } = await supabase.auth.updateUser({
         data: { name: name, avatar_url: avatarUrl }
       })
       if (authError) throw authError
 
-      // 2. Atualiza Tabela Users
+      // 2. Atualiza a tabela pública 'users'
       const { error: dbError } = await supabase
         .from('users')
         .update({
@@ -93,25 +106,23 @@ export default function ProfileSettings() {
 
       if (dbError) throw dbError
 
-      // SUCESSO: Mostra mensagem e recarrega depois de um tempinho
       showNotification('Perfil atualizado com sucesso!', 'success')
       
+      // Pequeno delay para o usuário ver o sucesso antes de recarregar
       setTimeout(() => {
         window.location.reload()
-      }, 1500)
+      }, 1000)
 
-    } catch (error) {
+    } catch (error: any) {
       showNotification('Erro ao atualizar perfil.', 'error')
-      console.error(error)
+      console.error(error.message)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500 relative">
-      
-      {/* Header */}
+    <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500 relative py-8">
       <div>
         <h1 className="text-3xl font-bold text-text-primary">Meu Perfil</h1>
         <p className="text-text-secondary mt-1">Gerencie suas informações pessoais e foto de exibição.</p>
@@ -121,7 +132,6 @@ export default function ProfileSettings() {
         <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
 
         <div className="px-8 pb-8">
-          {/* Avatar com botão de câmera */}
           <div className="relative -mt-16 mb-6 flex justify-center sm:justify-start">
             <div className="relative group">
               <div className="w-32 h-32 rounded-full border-4 border-surface bg-gray-200 overflow-hidden shadow-md">
@@ -142,7 +152,6 @@ export default function ProfileSettings() {
             </div>
           </div>
 
-          {/* Formulário */}
           <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-lg">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">Nome Completo</label>
@@ -152,6 +161,7 @@ export default function ProfileSettings() {
                 </div>
                 <input
                   type="text"
+                  required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -165,7 +175,12 @@ export default function ProfileSettings() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-secondary">
                   <Mail size={18} />
                 </div>
-                <input type="email" value={email} disabled className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-gray-50 dark:bg-gray-800/50 text-text-secondary cursor-not-allowed" />
+                <input 
+                  type="email" 
+                  value={email} 
+                  disabled 
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-gray-50 dark:bg-gray-800/50 text-text-secondary cursor-not-allowed" 
+                />
               </div>
             </div>
 
@@ -182,9 +197,9 @@ export default function ProfileSettings() {
         </div>
       </div>
 
-      {/* --- COMPONENTE DE NOTIFICAÇÃO (TOAST) --- */}
+      {/* TOAST NOTIFICATION */}
       {notification && (
-        <div className={`fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300`}>
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
           <div className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border ${
             notification.type === 'success' 
               ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-300' 
@@ -198,7 +213,6 @@ export default function ProfileSettings() {
           </div>
         </div>
       )}
-
     </div>
   )
 }
