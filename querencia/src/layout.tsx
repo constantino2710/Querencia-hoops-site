@@ -1,8 +1,11 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './components/Sidebar'
-import { Bell } from 'lucide-react' // Ícone de notificação (opcional)
+import { CartSidebar } from './components/CartSidebar'
+import { useCart } from './CartContext'
+import { Bell, ShoppingCart } from 'lucide-react' // Ícone de notificação (opcional)
 
 export function Layout() {
+    const { items, openCart } = useCart()
   const location = useLocation()
 
   // Função para definir o título do Header baseado na rota atual
@@ -42,6 +45,17 @@ export function Layout() {
            
            {/* Área direita do Header (Notificações, etc) */}
            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={openCart}
+                className="relative flex items-center justify-center rounded-full p-2 text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Abrir carrinho"
+              >
+                <ShoppingCart size={20} />
+                <span className="absolute -top-1 -right-1 min-w-[1.25rem] rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white text-center">
+                  {items.length}
+                </span>
+              </button>
               <button className="p-2 rounded-full text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
                 <Bell size={20} />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-surface"></span>
@@ -57,6 +71,7 @@ export function Layout() {
         </div>
 
       </main>
+        <CartSidebar />
     </div>
   )
 }

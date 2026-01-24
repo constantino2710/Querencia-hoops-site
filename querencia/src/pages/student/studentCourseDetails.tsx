@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { getCategoryIcon, getCategoryColor } from '../../utils/categoryHelper'
+import { useCart } from '../../CartContext'
 
 interface CourseDetails {
   id: string
@@ -30,6 +31,7 @@ interface CourseDetails {
 export default function StudentCourseDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
+const { addItem, items } = useCart()
   
   const [course, setCourse] = useState<CourseDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -111,6 +113,7 @@ export default function StudentCourseDetails() {
 
   const rating = getRating()
   const totalLessons = course.course_sections.reduce((acc, sec) => acc + sec.lessons.length, 0)
+  const isInCart = items.some(item => item.id === course.id)
 
   return (
     <div className="max-w-7xl mx-auto px-4 pb-12 animate-in fade-in duration-500">
@@ -172,7 +175,7 @@ export default function StudentCourseDetails() {
                     </div>
 
                     <div className="flex items-center gap-1 text-text-secondary ml-auto md:ml-0">
-                        <span>📅 Atualizado em {new Date(course.updated_at || course.created_at).toLocaleDateString('pt-BR')}</span>
+                        <span>Atualizado em {new Date(course.updated_at || course.created_at).toLocaleDateString('pt-BR')}</span>
                     </div>
                 </div>
             </div>
@@ -252,8 +255,21 @@ export default function StudentCourseDetails() {
                     </div>
 
                     <div className="space-y-3">
-                        <button className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2">
-                            <span>🛒</span> Adicionar ao Carrinho
+                        <button
+                            type="button"
+                            onClick={() =>
+                                addItem({
+                                    id: course.id,
+                                    title: course.title,
+                                    priceCents: course.price_cents,
+                                    thumbnailUrl: course.thumbnail_url,
+                                    teacherName: course.teacher?.name || null
+                                })
+                            }
+                            disabled={isInCart}
+                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            <span>🛒</span> {isInCart ? 'No carrinho' : 'Adicionar ao Carrinho'}
                         </button>
                     </div>
                 </div>

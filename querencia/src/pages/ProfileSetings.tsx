@@ -87,19 +87,20 @@ async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
 
     try {
       if (!session?.user) throw new Error('Usuário não logado')
+      const newName = name.trim()
+      const newAvatarUrl = avatarUrl ?? session.user.user_metadata.avatar_url ?? null
 
       // 1. Atualiza os metadados do Auth (Sessão)
       const { error: authError } = await supabase.auth.updateUser({
-        data: { name: name, avatar_url: avatarUrl }
-      })
+        data: { name: newName, avatar_url: newAvatarUrl }      })
       if (authError) throw authError
 
       // 2. Atualiza a tabela pública 'users'
       const { error: dbError } = await supabase
         .from('users')
         .update({
-          name: name,
-          avatar_url: avatarUrl,
+          name: newName,
+          avatar_url: newAvatarUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', session.user.id)

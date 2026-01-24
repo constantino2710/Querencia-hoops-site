@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './AuthContext'
 import { ThemeProvider } from './ThemeContext' // <--- IMPORTANTE: Adicionado
+import { CartProvider } from './CartContext'
 
 import { Layout } from './layout'
 import { Login } from './pages/login'
@@ -77,49 +78,50 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider> {/* Provedor de Tema envolvendo a aplicação */}
         <AuthProvider>
-          <Routes>
-            
-            {/* --- ROTAS PÚBLICAS --- */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-
-            {/* --- ROTAS PROTEGIDAS (COM SIDEBAR/LAYOUT) --- */}
-            <Route element={<Layout />}>
+          <CartProvider>
+            <Routes>
               
-              {/* Rota Raiz */}
-              <Route path="/" element={<HomeRedirect />} />
+              {/* --- ROTAS PÚBLICAS --- */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
 
-              {/* ROTA COMUM: PERFIL (Acessível para todos os logados) */}
-              <Route element={<PrivateRoute allowedRoles={['STUDENT', 'TEACHER', 'ADMIN']} />}>
-                 <Route path="/profile" element={<ProfileSettings />} />
+              {/* --- ROTAS PROTEGIDAS (COM SIDEBAR/LAYOUT) --- */}
+              <Route element={<Layout />}>
+                
+                {/* Rota Raiz */}
+                <Route path="/" element={<HomeRedirect />} />
+
+                {/* ROTA COMUM: PERFIL (Acessível para todos os logados) */}
+                <Route element={<PrivateRoute allowedRoles={['STUDENT', 'TEACHER', 'ADMIN']} />}>
+                  <Route path="/profile" element={<ProfileSettings />} />
+                </Route>
+
+                {/* --- ALUNO --- */}
+                <Route element={<PrivateRoute allowedRoles={['STUDENT']} />}>
+                  <Route path="/student/explore" element={<StudentExplore />} />
+                  <Route path="/student/dashboard" element={<StudentDashboard />} />
+                  <Route path="/student/courses/:id" element={<StudentCourseDetails />} />
+                </Route>
+
+                {/* --- PROFESSOR --- */}
+                <Route element={<PrivateRoute allowedRoles={['TEACHER']} />}>
+                  <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+                  <Route path="/teacher/courses" element={<TeacherCourses />} />            
+                  <Route path="/teacher/create" element={<TeacherCreateCourse />} />
+                  {/* Rota de Edição (Importante para o botão Gerenciar) */}
+                  <Route path="/teacher/courses/:id/edit" element={<TeacherCreateCourse />} />
+                </Route>
+
+                {/* --- ADMIN --- */}
+                <Route element={<PrivateRoute allowedRoles={['ADMIN']} />}>
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/teachers" element={<AdminTeachers />} />
+                  <Route path="/admin/students" element={<AdminStudents />} />
+                </Route>
               </Route>
-
-              {/* --- ALUNO --- */}
-              <Route element={<PrivateRoute allowedRoles={['STUDENT']} />}>
-                <Route path="/student/explore" element={<StudentExplore />} />
-                <Route path="/student/dashboard" element={<StudentDashboard />} />
-                <Route path="/student/courses/:id" element={<StudentCourseDetails />} />
-              </Route>
-
-              {/* --- PROFESSOR --- */}
-              <Route element={<PrivateRoute allowedRoles={['TEACHER']} />}>
-                <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-                <Route path="/teacher/courses" element={<TeacherCourses />} />            
-                <Route path="/teacher/create" element={<TeacherCreateCourse />} />
-                {/* Rota de Edição (Importante para o botão Gerenciar) */}
-                <Route path="/teacher/courses/:id/edit" element={<TeacherCreateCourse />} />
-              </Route>
-
-              {/* --- ADMIN --- */}
-              <Route element={<PrivateRoute allowedRoles={['ADMIN']} />}>
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/teachers" element={<AdminTeachers />} />
-                <Route path="/admin/students" element={<AdminStudents />} />
-              </Route>
-
-            </Route>
-          </Routes>
+            </Routes>
+          </CartProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
