@@ -1,78 +1,115 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
-import { useTheme } from '../ThemeContext' // <--- Importe o tema
+import { useTheme } from '../ThemeContext'
+import { SidebarUserProfile, SidebarLogout } from './SidebarUserArea'
 
 export function Sidebar() {
-  const { userRoles, signOut } = useAuth()
-  const { theme, toggleTheme } = useTheme() // <--- Hook do tema
+  const { role } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const location = useLocation()
 
-  // ... (Mantenha sua lista de menuItems igualzinha estava antes) ...
   const menuItems = [
-    { label: 'Explorar Cursos', path: '/student/explore', roles: ['STUDENT', 'ADMIN'], icon: '🔍' },
-    { label: 'Meu Progresso', path: '/student/dashboard', roles: ['STUDENT'], icon: '📊' },
-    { label: 'Dashboard', path: '/teacher/dashboard', roles: ['TEACHER'], icon: '📈' },
-    { label: 'Meus Cursos', path: '/teacher/courses', roles: ['TEACHER'], icon: '📚' },
-    { label: 'Dashboard Admin', path: '/admin/dashboard', roles: ['ADMIN'], icon: '🛡️' },
-    { label: 'Professores', path: '/admin/teachers', roles: ['ADMIN'], icon: '👨‍🏫' },
-    { label: 'Alunos', path: '/admin/students', roles: ['ADMIN'], icon: '🎓' },
+    // --- ÁREA DO ESTUDANTE (Visível APENAS para Student) ---
+    { 
+      label: 'Explorar Cursos', 
+      path: '/student/explore', 
+      roles: ['STUDENT'], // <--- CORRIGIDO: Só estudante vê
+      icon: '🔍' 
+    },
+    { 
+      label: 'Meu Aprendizado', 
+      path: '/student/dashboard', 
+      roles: ['STUDENT'], 
+      icon: '🎓' 
+    },
+
+    // --- ÁREA DO PROFESSOR ---
+    { 
+      label: 'Dashboard', 
+      path: '/teacher/dashboard', 
+      roles: ['TEACHER'], 
+      icon: '📈' 
+    },
+    { 
+      label: 'Meus Cursos', 
+      path: '/teacher/courses', 
+      roles: ['TEACHER'], 
+      icon: '📚' 
+    },
+
+    // --- ÁREA DO ADMIN ---
+    { 
+      label: 'Visão Geral', 
+      path: '/admin/dashboard', 
+      roles: ['ADMIN'], 
+      icon: '🛡️' 
+    },
+    { 
+      label: 'Professores', 
+      path: '/admin/teachers', 
+      roles: ['ADMIN'], 
+      icon: '👨‍🏫' 
+    },
+    { 
+      label: 'Alunos', 
+      path: '/admin/students', 
+      roles: ['ADMIN'], 
+      icon: '🎓' 
+    },
   ]
 
+  // Filtra itens
   const allowedItems = menuItems.filter(item => 
-    item.roles.some(role => userRoles.includes(role))
+    role && item.roles.includes(role)
   )
 
   return (
-    <aside className="w-64 bg-sidebar-bg text-sidebar-text flex flex-col shadow-xl transition-colors duration-300">
-      <div className="p-6 border-b border-gray-700">
-        <h1 className="text-xl font-bold tracking-tight">Plataforma SaaS</h1>
-        <div className="mt-2 flex flex-wrap gap-1">
-          {userRoles.map(role => (
-            <span key={role} className="text-[10px] uppercase bg-gray-700 px-2 py-0.5 rounded text-white">
-              {role}
-            </span>
-          ))}
+    // Sidebar fixa com largura definida (w-64)
+    <aside className="w-64 bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
+      
+      {/* 1. Header */}
+      <div className="h-20 flex items-center justify-between px-6 border-b border-border shrink-0">
+        <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                QH
+            </div>
+            <h1 className="text-xl font-bold text-text-primary tracking-tight">Querênciahoops</h1>
         </div>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-1">
-          {allowedItems.map((item) => {
-            const isActive = location.pathname === item.path
-            return (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center gap-3 px-6 py-3 transition-all duration-200 border-l-4 ${
-                    isActive 
-                      ? 'bg-gray-800 border-blue-500 text-white' 
-                      : 'border-transparent text-gray-400 hover:bg-gray-800 hover:text-gray-100'
-                  }`}
-                >
-                  <span>{item.icon}</span>
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
-      </nav>
-
-      <div className="p-4 border-t border-gray-700 space-y-3">
-        {/* BOTÃO DE TEMA */}
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-medium transition text-white"
+          className="p-2 rounded-lg text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
-          {theme === 'light' ? '🌙 Modo Escuro' : '☀️ Modo Claro'}
+          {theme === 'light' ? '🌙' : '☀️'}
         </button>
+      </div>
 
-        <button 
-          onClick={signOut}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium transition shadow-lg text-white"
-        >
-          🚪 Sair
-        </button>
+      {/* 2. Menu */}
+      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 custom-scrollbar">
+        {allowedItems.map((item) => {
+          const isActive = location.pathname === item.path
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 font-semibold shadow-sm' 
+                  : 'text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-text-primary'
+              }`}
+            >
+              <span className={`text-lg ${isActive ? '' : 'grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all'}`}>
+                {item.icon}
+              </span>
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* 3. Rodapé */}
+      <div className="p-4 border-t border-border bg-gray-50/50 dark:bg-gray-800/20 shrink-0 flex flex-col gap-1 mt-auto">
+        <SidebarUserProfile />
+        <SidebarLogout />
       </div>
     </aside>
   )

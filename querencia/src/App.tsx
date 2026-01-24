@@ -18,6 +18,7 @@ import TeacherCreateCourse from './pages/teacher/TeacherCreateCourse'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminTeachers from './pages/admin/AdminTeachers'
 import AdminStudents from './pages/admin/AdminStudents'
+import StudentCourseDetails from './pages/student/studentCourseDetails'
 
 // Componente de Acesso Negado
 const Unauthorized = () => {
@@ -86,6 +87,7 @@ export default function App() {
             <Route element={<PrivateRoute allowedRoles={['STUDENT']} />}>
               <Route path="/student/explore" element={<StudentExplore />} />
               <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route path="/student/courses/:id" element={<StudentCourseDetails />} />
             </Route>
 
             {/* --- ROTAS DO PROFESSOR --- */}

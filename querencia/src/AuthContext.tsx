@@ -4,15 +4,15 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabaseClient'
 
-// Definição do formato dos dados do contexto
+// 1. Atualizamos a interface para incluir 'role' (singular)
 interface AuthContextType {
   session: Session | null
   userRoles: string[]
+  role: string | null // <--- NOVA PROPRIEDADE
   loading: boolean
   signOut: () => Promise<void>
 }
 
-// Cria o contexto vazio inicialmente
 const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -20,8 +20,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userRoles, setUserRoles] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
+  // 2. Lógica para determinar o cargo "Principal" (Prioridade: Admin > Teacher > Student)
+  const role = userRoles.includes('ADMIN') ? 'ADMIN' 
+    : userRoles.includes('TEACHER') ? 'TEACHER' 
+    : userRoles.includes('STUDENT') ? 'STUDENT' 
+    : null
+
   useEffect(() => {
-    // 1. Pega sessão inicial ao carregar a página
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session) {
@@ -31,14 +36,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
-    // 2. Escuta mudanças (Login, Logout, Expiração)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) {
         setLoading(true)
         fetchRoles(session.user.id)
       } else {
-        setUserRoles([]) // Limpa roles se deslogar
+        setUserRoles([])
         setLoading(false)
       }
     })
@@ -46,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Função robusta para buscar os cargos
   async function fetchRoles(userId: string) {
     try {
       const { data, error } = await supabase
@@ -57,12 +60,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error
 
       if (data) {
-        // O .trim() remove espaços invisíveis
-        // O .toUpperCase() garante que Teacher vire TEACHER
         const roles = data
           .map((item: any) => item.roles?.name?.trim().toUpperCase()) 
           .filter(Boolean)
-        // --- ESTA É A LINHA MAIS IMPORTANTE ---
         setUserRoles(roles) 
       }
     } catch (err) {
@@ -78,12 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserRoles([])
   }
 
+  // 3. Passamos 'role' no valor do Provider
   return (
-    <AuthContext.Provider value={{ session, userRoles, loading, signOut }}>
+    <AuthContext.Provider value={{ session, userRoles, role, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-// Hook para usar o contexto
 export const useAuth = () => useContext(AuthContext)
