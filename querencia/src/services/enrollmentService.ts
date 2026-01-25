@@ -3,16 +3,12 @@
 import { supabase } from '../supabaseClient'
 
 /**
- * Cria matrículas para múltiplos cursos, processando pagamentos e ganhos dos professores.
- * @param userId ID do aluno que está a realizar a compra.
- * @param items Lista de cursos (carrinho) com id, priceCents e teacherId.
+ * Cria matrículas para os cursos no carrinho, processando pagamentos e ganhos dos professores.
  */
 export async function createMultipleEnrollments(userId: string, items: any[]) {
-  // Usamos um loop para processar cada item individualmente
-  // Isso garante a integridade referencial para cada professor e curso
   for (const item of items) {
     try {
-      // 1. Criar a matrícula para o curso específico
+      // 1. Criar a matrícula na tabela 'enrollments'
       const { data: enrollment, error: enrollError } = await supabase
         .from('enrollments')
         .insert({
@@ -26,22 +22,21 @@ export async function createMultipleEnrollments(userId: string, items: any[]) {
 
       if (enrollError) throw enrollError
 
-      // 2. Registrar o pagamento vinculado a ESTA matrícula específica
+      // 2. Registar o pagamento na tabela 'payments'
       const { error: paymentError } = await supabase
         .from('payments')
         .insert({
           enrollment_id: enrollment.id,
           amount_cents: item.priceCents || 0,
-          provider: 'MANUAL', // Define como MANUAL para processamento interno
+          provider: 'MANUAL',
           status: 'PAID'
         })
 
       if (paymentError) throw paymentError
 
-      // 3. Lógica de Repasse: Registrar o ganho para o professor deste curso
-      // Aqui garantimos que o valor seja destinado ao teacher_id correto do curso
+      // 3. Registar o ganho do professor na tabela 'teacher_earnings'
       if (item.teacherId) {
-        const platformFeePercent = 0.10 // Taxa da plataforma (ex: 10%)
+        const platformFeePercent = 0.05 // Taxa de 5% da plataforma
         const grossAmount = item.priceCents || 0
         const feeAmount = Math.round(grossAmount * platformFeePercent)
         const netAmount = grossAmount - feeAmount
@@ -58,9 +53,8 @@ export async function createMultipleEnrollments(userId: string, items: any[]) {
 
         if (earningError) throw earningError
       }
-    } catch (error) {
-      console.error(`Erro ao processar curso ${item.id}:`, error)
-      // Interrompe a execução para evitar que o aluno fique matriculado sem o registo financeiro correto
+    } catch (error: any) {
+      console.error(`Erro ao processar curso ${item.id}:`, error.message || error)
       throw error 
     }
   }
