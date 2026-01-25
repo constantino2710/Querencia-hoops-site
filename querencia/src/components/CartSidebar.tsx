@@ -7,7 +7,7 @@ const formatPrice = (cents: number | null) => {
 }
 
 export function CartSidebar() {
-  const { items, isOpen, closeCart, removeItem, clear } = useCart()
+  const { items, isOpen, closeCart, removeItem, clear, checkout } = useCart()
 
   return (
     <>
@@ -26,6 +26,7 @@ export function CartSidebar() {
         aria-hidden={!isOpen}
       >
         <div className="flex h-full flex-col">
+          {/* Cabeçalho */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div>
               <p className="text-sm text-text-secondary">Seu carrinho</p>
@@ -33,15 +34,12 @@ export function CartSidebar() {
                 {items.length > 0 ? `${items.length} curso${items.length > 1 ? 's' : ''}` : 'Carrinho vazio'}
               </h3>
             </div>
-            <button
-              type="button"
-              onClick={closeCart}
-              className="rounded-full p-2 text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
+            <button onClick={closeCart} className="rounded-full p-2 text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
               <X size={20} />
             </button>
           </div>
 
+          {/* Lista de Itens */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 custom-scrollbar">
             {items.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-6 text-center text-text-secondary">
@@ -49,34 +47,16 @@ export function CartSidebar() {
               </div>
             ) : (
               items.map(item => (
-                <div
-                  key={item.id}
-                  className="flex gap-4 rounded-xl border border-border bg-background p-4 shadow-sm"
-                >
-                  <div className="h-16 w-24 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-                    {item.thumbnailUrl ? (
-                      <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-text-secondary">
-                        Sem imagem
-                      </div>
-                    )}
+                <div key={item.id} className="flex gap-4 rounded-xl border border-border bg-background p-4 shadow-sm">
+                  <div className="h-16 w-24 overflow-hidden rounded-lg bg-gray-100">
+                    {item.thumbnailUrl && <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover" />}
                   </div>
-                  <div className="flex flex-1 flex-col gap-2">
-                    <div>
-                      <p className="font-semibold text-text-primary line-clamp-2">{item.title}</p>
-                      {item.teacherName && (
-                        <p className="text-xs text-text-secondary">Prof. {item.teacherName}</p>
-                      )}
-                    </div>
-                    <div className="mt-auto flex items-center justify-between">
-                      <span className="font-semibold text-blue-600 dark:text-blue-400">{formatPrice(item.priceCents)}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        className="rounded-full p-2 text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        aria-label="Remover do carrinho"
-                      >
+                  <div className="flex flex-1 flex-col">
+                    <p className="font-semibold text-text-primary line-clamp-1">{item.title}</p>
+                    <p className="text-xs text-text-secondary">Prof. {item.teacherName}</p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="font-bold text-blue-600">{formatPrice(item.priceCents)}</span>
+                      <button onClick={() => removeItem(item.id)} className="text-text-secondary hover:text-red-500">
                         <Trash2 size={18} />
                       </button>
                     </div>
@@ -86,21 +66,23 @@ export function CartSidebar() {
             )}
           </div>
 
+          {/* Ações Finais */}
           <div className="border-t border-border px-6 py-4 space-y-3">
             <button
               type="button"
               onClick={clear}
               disabled={items.length === 0}
-              className="w-full rounded-lg border border-border py-2 text-sm font-semibold text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-lg border border-border py-2 text-sm font-semibold text-text-secondary hover:bg-gray-100 disabled:opacity-50"
             >
               Limpar carrinho
             </button>
             <button
               type="button"
+              onClick={checkout}
               disabled={items.length === 0}
-              className="w-full rounded-lg bg-blue-600 py-3 text-white font-bold shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full rounded-lg bg-blue-600 py-3 text-white font-bold shadow-sm hover:bg-blue-700 disabled:opacity-50"
             >
-              Finalizar compra
+              Finalizar Matrícula
             </button>
           </div>
         </div>
