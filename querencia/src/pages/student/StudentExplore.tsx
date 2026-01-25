@@ -19,39 +19,70 @@ interface CoursePreview {
 
 export default function StudentExplore() {
   const [courses, setCourses] = useState<CoursePreview[]>([])
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    fetchPublishedCourses()
+    loadData()
   }, [])
 
-  async function fetchPublishedCourses() {
+  async function loadData() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('courses')
-        .select(`
-          *,
-          categories(name, slug),
-          teacher:users!fk_courses_teacher(name, avatar_url), 
-          course_reviews(rating)
-        `)
-        .eq('status', 'PUBLISHED')
-        .order('created_at', { ascending: false })
+      
+      // 1. Obter o utilizador atual
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // 2. Procurar cursos onde o aluno já está matriculado
+        const { data: enrollments, error: enrollError } = await supabase
+          .from('enrollments')
+          .select('course_id')
+          .eq('student_id', user.id)
 
-      if (error) throw error
-      if (data) setCourses(data as unknown as CoursePreview[])
+        if (enrollError) throw enrollError
+        
+        if (enrollments) {
+          const ids = new Set(enrollments.map(e => e.course_id))
+          setEnrolledCourseIds(ids)
+        }
+      }
+
+      // 3. Procurar todos os cursos publicados
+      await fetchPublishedCourses()
       
     } catch (error: any) {
-      console.error('Erro ao buscar cursos:', error.message || error)
+      console.error('Erro ao carregar dados:', error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  // Lógica de filtragem baseada no termo de pesquisa
+  async function fetchPublishedCourses() {
+    const { data, error } = await supabase
+      .from('courses')
+      .select(`
+        *,
+        categories(name, slug),
+        teacher:users!fk_courses_teacher(name, avatar_url), 
+        course_reviews(rating)
+      `)
+      .eq('status', 'PUBLISHED')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    if (data) setCourses(data as unknown as CoursePreview[])
+  }
+
+  // Lógica de filtragem: Termo de pesquisa + Não estar matriculado
   const filteredCourses = courses.filter(course => {
+    // Regra 1: Não exibir se já estiver matriculado
+    if (enrolledCourseIds.has(course.id)) {
+      return false
+    }
+
+    // Regra 2: Termo de pesquisa
     const term = searchTerm.toLowerCase()
     return (
       course.title.toLowerCase().includes(term) ||
@@ -78,7 +109,7 @@ export default function StudentExplore() {
            </div>
         ) : filteredCourses.length === 0 ? (
            <div className="text-center py-12 opacity-70">
-             <p className="text-xl">Nenhum curso encontrado.</p>
+             <p className="text-xl">Nenhum curso novo encontrado para si.</p>
            </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-6">

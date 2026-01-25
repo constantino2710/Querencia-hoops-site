@@ -101,7 +101,7 @@ export default function App() {
                 <Route element={<PrivateRoute allowedRoles={['STUDENT']} />}>
                   <Route path="/student/explore" element={<StudentExplore />} />
                   <Route path="/student/dashboard" element={<StudentDashboard />} />
-                  <Route path="/student/courses/:id" element={<StudentCourseDetails />} />
+                  <Route path="/student/course/:id" element={<StudentCourseDetails />} />
                 </Route>
 
                 {/* --- PROFESSOR --- */}

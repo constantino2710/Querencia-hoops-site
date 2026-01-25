@@ -2,9 +2,14 @@
 // src/services/enrollmentService.ts
 import { supabase } from '../supabaseClient'
 
+/**
+ * Cria matrículas para múltiplos cursos, processando pagamentos e ganhos dos professores.
+ * @param userId ID do aluno que está a realizar a compra.
+ * @param items Lista de cursos (carrinho) com id, priceCents e teacherId.
+ */
 export async function createMultipleEnrollments(userId: string, items: any[]) {
   // Usamos um loop para processar cada item individualmente
-  // Isso garante a integridade referencial para cada professor
+  // Isso garante a integridade referencial para cada professor e curso
   for (const item of items) {
     try {
       // 1. Criar a matrícula para o curso específico
@@ -21,22 +26,22 @@ export async function createMultipleEnrollments(userId: string, items: any[]) {
 
       if (enrollError) throw enrollError
 
-      // 2. Registrar o pagamento vinculado a ESTA matrícula
+      // 2. Registrar o pagamento vinculado a ESTA matrícula específica
       const { error: paymentError } = await supabase
         .from('payments')
         .insert({
           enrollment_id: enrollment.id,
           amount_cents: item.priceCents || 0,
-          provider: 'MANUAL',
+          provider: 'MANUAL', // Define como MANUAL para processamento interno
           status: 'PAID'
         })
 
       if (paymentError) throw paymentError
 
-      // 3. Lógica de Repasse: Registrar o ganho para o professor deste curso específico
-      // Aqui garantimos que o dinheiro vá para o teacher_id correto do item
+      // 3. Lógica de Repasse: Registrar o ganho para o professor deste curso
+      // Aqui garantimos que o valor seja destinado ao teacher_id correto do curso
       if (item.teacherId) {
-        const platformFeePercent = 0.10 // Exemplo de taxa de 10%
+        const platformFeePercent = 0.10 // Taxa da plataforma (ex: 10%)
         const grossAmount = item.priceCents || 0
         const feeAmount = Math.round(grossAmount * platformFeePercent)
         const netAmount = grossAmount - feeAmount
@@ -45,7 +50,7 @@ export async function createMultipleEnrollments(userId: string, items: any[]) {
           .from('teacher_earnings')
           .insert({
             enrollment_id: enrollment.id,
-            teacher_id: item.teacherId, // ID do professor extraído do curso
+            teacher_id: item.teacherId, 
             gross_amount_cents: grossAmount,
             platform_fee_cents: feeAmount,
             net_amount_cents: netAmount
@@ -55,7 +60,8 @@ export async function createMultipleEnrollments(userId: string, items: any[]) {
       }
     } catch (error) {
       console.error(`Erro ao processar curso ${item.id}:`, error)
-      throw error // Interrompe para evitar matrículas parciais sem registro financeiro
+      // Interrompe a execução para evitar que o aluno fique matriculado sem o registo financeiro correto
+      throw error 
     }
   }
 }

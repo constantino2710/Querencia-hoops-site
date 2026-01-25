@@ -19,19 +19,20 @@ export function Sidebar() {
 
   const menuItems = [
     // --- ESTUDANTE ---
-    { 
-      label: 'Explorar Cursos', 
-      path: '/student/explore', 
-      roles: ['STUDENT'], 
-      icon: <Search size={20} /> // Ícone de Lupa
-    },
-    { 
+      { 
       label: 'Meu Aprendizado', 
       path: '/student/dashboard', 
       roles: ['STUDENT'], 
       // Aqui usei o LayoutDashboard também, pois é o dashboard do aluno
       icon: <LayoutDashboard size={20} /> 
     },
+    { 
+      label: 'Explorar Cursos', 
+      path: '/student/explore', 
+      roles: ['STUDENT'], 
+      icon: <Search size={20} /> // Ícone de Lupa
+    },
+
 
     // --- PROFESSOR ---
     { 
