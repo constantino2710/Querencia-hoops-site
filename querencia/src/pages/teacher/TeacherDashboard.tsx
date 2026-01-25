@@ -72,8 +72,8 @@ export default function TeacherDashboard() {
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
 return (
-  <div className="w-full max-w-none animate-in fade-in duration-500">
-    <div className="w-full bg-[rgb(var(--surface))] p-6 rounded-2xl">
+  <div className="animate-in fade-in duration-500">
+    <div className=" bg-[rgb(var(--surface))] p-6 rounded-2xl shadow-sm border border-border">
       <div className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Saldo Líquido" 
