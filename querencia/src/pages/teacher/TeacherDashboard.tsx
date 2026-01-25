@@ -10,7 +10,7 @@ export default function TeacherDashboard() {
     totalNetEarnings: 0,
     totalSalesCount: 0,
     coursesCount: 0,
-    totalStudents: 0, // Novo estado para total de alunos
+    totalStudents: 0, 
     avgRating: 0
   })
   const [loading, setLoading] = useState(true)
@@ -25,26 +25,25 @@ export default function TeacherDashboard() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // 1. Ganhos reais da tabela teacher_earnings
+      // 1. Ganhos líquidos (Busca da tabela teacher_earnings)
       const { data: earningsData } = await supabase
         .from('teacher_earnings')
         .select('net_amount_cents')
         .eq('teacher_id', user.id)
 
-      // 2. Vendas totais (enrollments) filtrando pelos cursos do professor
+      // 2. Vendas totais (Contagem de matrículas nos cursos deste professor)
       const { count: salesCount } = await supabase
         .from('enrollments')
         .select('id, courses!inner(teacher_id)', { count: 'exact', head: true })
         .eq('courses.teacher_id', user.id)
 
-      // 3. Contagem de cursos criados
+      // 3. Contagem de cursos criados pelo professor
       const { count: coursesCount } = await supabase
         .from('courses')
         .select('id', { count: 'exact', head: true })
         .eq('teacher_id', user.id)
 
-      // 4. Total de Alunos Únicos (Estudantes distintos matriculados nos cursos dele)
-      // Buscamos os student_id únicos das matrículas vinculadas aos cursos do professor
+      // 4. Total de Alunos Únicos (Filtra IDs de estudantes sem repetição)
       const { data: studentsData } = await supabase
         .from('enrollments')
         .select('student_id, courses!inner(teacher_id)')
@@ -72,14 +71,10 @@ export default function TeacherDashboard() {
   const formatBRL = (val: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Painel do Professor</h1>
-        <p className="text-gray-500 dark:text-gray-400">Dados reais de vendas e alunos.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+return (
+  <div className="w-full max-w-none animate-in fade-in duration-500">
+    <div className="w-full bg-[rgb(var(--surface))] p-6 rounded-2xl">
+      <div className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Saldo Líquido" 
           value={formatBRL(stats.totalNetEarnings)}
@@ -109,5 +104,6 @@ export default function TeacherDashboard() {
         />
       </div>
     </div>
-  )
+  </div>
+)
 }
