@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import { StatCard } from './components/StatCard'
-import { DollarSign, Users, BookOpen, TrendingUp, GraduationCap } from 'lucide-react'
+import { DollarSign, BookOpen, TrendingUp, GraduationCap } from 'lucide-react'
 
 export default function TeacherDashboard() {
   const [stats, setStats] = useState({
@@ -13,7 +13,7 @@ export default function TeacherDashboard() {
     totalStudents: 0, 
     avgRating: 0
   })
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
 
   useEffect(() => {
     fetchDashboardData()

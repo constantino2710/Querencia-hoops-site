@@ -85,7 +85,7 @@ export default function StudentCourseDetails() {
         // 2. VERIFICAÇÃO DE MATRÍCULA CRÍTICA
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
-          const { data: enrollment, error: enrollError } = await supabase
+          const { data: enrollment } = await supabase
             .from('enrollments')
             .select('id')
             .eq('course_id', id)
@@ -124,7 +124,6 @@ export default function StudentCourseDetails() {
   if (!course) return <div className="p-10 text-center">Curso não encontrado</div>
 
   const rating = getRating()
-  const totalLessons = course.course_sections?.reduce((acc, sec) => acc + (sec.lessons?.length || 0), 0) || 0
   const isInCart = items.some(item => item.id === course.id)
 
   return (
