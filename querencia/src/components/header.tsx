@@ -54,10 +54,6 @@ export function Header() {
           <Bell size={20} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-surface"></span>
         </button>
-
-        <div className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center text-sm font-bold text-text-secondary">
-          U
-        </div>
       </div>
     </header>
   )
