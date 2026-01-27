@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useNavigate } from 'react-router-dom'
 import { Star, PlayCircle } from 'lucide-react'
+import type { CourseProgress } from '../utils/courseProgress'
+import { ProgressBar } from './ProgressBar'
 
 interface CourseCardProps {
   course: any
   isEnrolled?: boolean // Propriedade que define se o preço some
+  progress?: CourseProgress
 }
 
-export function CourseCard({ course, isEnrolled }: CourseCardProps) {
+export function CourseCard({ course, isEnrolled, progress }: CourseCardProps) {
   const navigate = useNavigate()
 
   // Média de avaliações
@@ -35,11 +38,11 @@ export function CourseCard({ course, isEnrolled }: CourseCardProps) {
           <img 
             src={course.thumbnail_url} 
             alt={course.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            Sem imagem
+          <div className="w-full h-full flex items-center justify-center opacity-20">
+            <PlayCircle className="w-12 h-12" />
           </div>
         )}
         
@@ -65,6 +68,16 @@ export function CourseCard({ course, isEnrolled }: CourseCardProps) {
         <div className="flex items-center gap-2 mb-4">
           <span className="text-xs opacity-60">Por {course.teacher?.name}</span>
         </div>
+
+        {isEnrolled && progress ? (
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-text-secondary mb-1">
+              <span>Progresso</span>
+              <span className="font-semibold text-text-primary">{progress.percent}%</span>
+            </div>
+            <ProgressBar value={progress.percent} />
+          </div>
+        ) : null}
 
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100 dark:border-zinc-800">
           <div className="flex items-center gap-1">

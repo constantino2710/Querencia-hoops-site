@@ -2,9 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { getStoredCourseProgress } from './utils/courseProgress'
+import { CourseProgressCard } from './components/CourseProgressCard'
 import { supabase } from '../../supabaseClient'
 import { getCategoryIcon, getCategoryColor } from '../../utils/categoryHelper'
 import { useCart } from '../../CartContext'
+import { Play } from 'lucide-react'
 
 interface CourseDetails {
   id: string
@@ -38,6 +41,7 @@ export default function StudentCourseDetails() {
   const [loading, setLoading] = useState(true)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
+  const [userId, setUserId] = useState<string>('')
 
   useEffect(() => {
     if (id) fetchCourseDetails()
@@ -85,6 +89,7 @@ export default function StudentCourseDetails() {
         // 2. VERIFICAÇÃO DE MATRÍCULA CRÍTICA
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
+          setUserId(session.user.id)
           const { data: enrollment } = await supabase
             .from('enrollments')
             .select('id')
@@ -120,6 +125,14 @@ export default function StudentCourseDetails() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100)
   }
 
+  const progress = course && userId
+    ? getStoredCourseProgress(
+        userId,
+        course.id,
+        course.course_sections.flatMap((section) => section.lessons.map((lesson) => lesson.id))
+      )
+    : null
+
   if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
   if (!course) return <div className="p-10 text-center">Curso não encontrado</div>
 
@@ -145,43 +158,44 @@ export default function StudentCourseDetails() {
                     </span>
                 )}
                 <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-4 leading-tight">{course.title}</h1>
-                <p className="text-lg text-text-secondary mb-6 leading-relaxed">{course.description || "Sem descrição disponível."}</p>
-
-                <div className="flex flex-wrap items-center gap-6 text-sm text-text-primary">
+                
+                <div className="flex flex-wrap items-center gap-6 text-sm text-text-secondary">
+                    <div className="flex items-center gap-2">
+                        {course.teacher?.avatar_url ? (
+                            <img src={course.teacher.avatar_url} className="w-6 h-6 rounded-full" />
+                        ) : (
+                            <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                {course.teacher?.name.charAt(0)}
+                            </div>
+                        )}
+                        <span className="font-medium">Prof. {course.teacher?.name}</span>
+                    </div>
                     <div className="flex items-center gap-1">
-                        <span className="text-yellow-500 text-lg">★</span>
-                        <span className="font-bold">{rating.toFixed(1)}</span>
-                        <span className="text-text-secondary">({course.course_reviews?.length || 0} avaliações)</span>
+                        <span className="text-yellow-500 font-bold">★ {rating.toFixed(1)}</span>
+                        <span>({course.course_reviews.length} avaliações)</span>
                     </div>
-
-                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 py-1.5 px-3 rounded-full border border-border">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0 border border-border">
-                             {course.teacher?.avatar_url ? (
-                                <img src={course.teacher.avatar_url} alt={course.teacher.name} className="w-full h-full object-cover" />
-                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-700 font-bold text-xs">
-                                    {course.teacher?.name?.[0]?.toUpperCase() || 'P'}
-                                </div>
-                             )}
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-text-secondary uppercase font-bold tracking-wider leading-none mb-0.5">Instrutor</p>
-                            <span className="font-semibold text-text-primary text-sm">{course.teacher?.name || 'Professor'}</span>
-                        </div>
-                    </div>
+                    <div>Atualizado em {new Date(course.updated_at).toLocaleDateString('pt-BR')}</div>
                 </div>
             </div>
 
-            <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-border flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
-                    <h2 className="text-xl font-bold text-text-primary">Conteúdo do Curso</h2>
-                </div>
+            <div className="prose dark:prose-invert max-w-none">
+                <h2 className="text-xl font-bold mb-4">Sobre este curso</h2>
+                <p className="text-text-secondary leading-relaxed whitespace-pre-wrap">{course.description}</p>
+            </div>
 
-                <div>
-                    {course.course_sections?.map((section) => (
-                        <div key={section.id} className="border-b border-border last:border-0">
-                            <button onClick={() => toggleSection(section.id)} className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                <span className="font-bold">{section.title}</span>
+            <div>
+                <h2 className="text-xl font-bold mb-6">Conteúdo do curso</h2>
+                <div className="border border-border rounded-xl overflow-hidden divide-y divide-border bg-surface">
+                    {course.course_sections.map(section => (
+                        <div key={section.id} className="group">
+                            <button 
+                                onClick={() => toggleSection(section.id)}
+                                className="w-full px-6 py-4 flex items-center justify-between hover:bg-background transition-colors text-left"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm font-bold opacity-30">{String(section.position).padStart(2, '0')}</span>
+                                    <span className="font-bold text-text-primary">{section.title}</span>
+                                </div>
                                 <span className="text-sm opacity-60">{section.lessons?.length || 0} aulas</span>
                             </button>
                             
@@ -207,13 +221,14 @@ export default function StudentCourseDetails() {
 
         {/* COLUNA DIREITA - SIDEBAR DE COMPRA/ASSISTIR */}
         <div className="lg:col-span-1">
-            <div className="sticky top-6 bg-surface border border-border rounded-xl shadow-lg overflow-hidden">
+          <div className="sticky top-6 space-y-6">
+              {isEnrolled && progress ? <CourseProgressCard progress={progress} /> : null}
+              <div className="bg-surface border border-border rounded-xl shadow-lg overflow-hidden">
                 <div className="aspect-video bg-gray-200 dark:bg-gray-800">
                     {course.thumbnail_url && <img src={course.thumbnail_url} className="w-full h-full object-cover" />}
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* SÓ MOSTRA PREÇO SE NÃO ESTIVER MATRICULADO */}
                     {!isEnrolled ? (
                       <>
                         <div>
@@ -238,14 +253,16 @@ export default function StudentCourseDetails() {
                       </>
                     ) : (
                       <button
-                          onClick={() => navigate(`/student/course/${course.id}/player`)}
-                          className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-lg flex items-center justify-center gap-2"
+                        onClick={() => navigate(`/student/course/${course.id}/player`)}
+                        className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-lg flex items-center justify-center gap-2"
                       >
-                          ▶ Assistir agora
+                        <Play className="w-5 h-5" /> {/* ✅ troca o "▶" por isso */}
+                        Assistir agora
                       </button>
                     )}
                 </div>
-            </div>
+              </div>
+          </div>
         </div>
 
       </div>
