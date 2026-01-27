@@ -99,7 +99,7 @@ export default function StudentDashboard() {
   }, [enrolledCourses, progressByCourse])
 
   return (
-    <div className="flex flex-col w-full min-h-screen">
+    <div className="flex flex-col w-full h-full min-h-0">
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

@@ -58,8 +58,7 @@ export default function TeacherCourses() {
   })
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-6rem)] w-full">
-      
+    <div className="flex flex-col h-full min-h-0 w-full">      
       {/* Controles do Topo */}
       <div className="mb-4 shrink-0 w-full">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
@@ -81,8 +80,8 @@ export default function TeacherCourses() {
       </div>
 
       {/* Grid (Mantido igual) */}
-      <div className="bg-surface border border-border rounded-xl shadow-sm flex-1 overflow-hidden flex flex-col relative">
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+      <div className="bg-surface border border-border rounded-xl shadow-sm flex-1 min-h-0 overflow-hidden flex flex-col relative">
+        <div className="flex-1 min-h-0 overflow-y-auto p-6 custom-scrollbar">
           {loading ? (
             <div className="flex justify-center items-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

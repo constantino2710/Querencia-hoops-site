@@ -91,7 +91,7 @@ export default function StudentExplore() {
   })
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-6rem)] w-full">
+    <div className="flex flex-col h-full min-h-0 w-full">
       <div className="mb-6 shrink-0">
         <div className="flex flex-col sm:flex-row gap-2">
             <SearchBar 
@@ -102,7 +102,7 @@ export default function StudentExplore() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
         {loading ? (
            <div className="flex justify-center items-center h-40">
              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
