@@ -15,9 +15,11 @@ export function CourseCard({ course, isEnrolled, progress }: CourseCardProps) {
 
   // Média de avaliações
   const ratings = course.course_reviews || []
-  const averageRating = ratings.length > 0
-    ? ratings.reduce((acc: number, rev: any) => acc + (rev.rating || 0), 0) / ratings.length
+  const validRatings = ratings.filter((rev: any) => rev.rating !== null)
+  const averageRating = validRatings.length > 0
+    ? validRatings.reduce((acc: number, rev: any) => acc + (rev.rating || 0), 0) / validRatings.length
     : 0
+  const ratingCount = validRatings.length
 
   const formatPrice = (cents: number | null) => {
     if (cents === 0) return 'Grátis'
@@ -83,6 +85,7 @@ export function CourseCard({ course, isEnrolled, progress }: CourseCardProps) {
           <div className="flex items-center gap-1">
             <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
             <span className="text-xs font-bold">{averageRating.toFixed(1)}</span>
+            <span className="text-[10px] text-text-secondary">({ratingCount})</span>
           </div>
 
           {/* LÓGICA DO PREÇO: Se estiver matriculado, esconde o valor */}

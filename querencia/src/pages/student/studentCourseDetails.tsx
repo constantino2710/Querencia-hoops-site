@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { getStoredCourseProgress } from './utils/courseProgress'
 import { CourseProgressCard } from './components/CourseProgressCard'
+import { CourseRatingCard } from './components/CourseRatingCard'
 import { supabase } from '../../supabaseClient'
 import { getCategoryIcon, getCategoryColor } from '../../utils/categoryHelper'
 import { useCart } from '../../CartContext'
@@ -23,7 +24,7 @@ interface CourseDetails {
     name: string
     avatar_url: string | null 
   } | null
-  course_reviews: { rating: number | null }[]
+  course_reviews: { rating: number | null; student_id: string | null }[]
   course_sections: {
     id: string
     title: string
@@ -59,7 +60,7 @@ export default function StudentCourseDetails() {
           *,
           categories(name, slug),
           teacher:users!fk_courses_teacher(id, name, avatar_url),
-          course_reviews(rating),
+          course_reviews(rating, student_id),
           course_sections(
             id, title, position,
             lessons(id, title, position)
@@ -118,6 +119,11 @@ export default function StudentCourseDetails() {
     const valid = course.course_reviews.filter(r => r.rating !== null)
     return valid.length ? valid.reduce((acc, curr) => acc + (curr.rating || 0), 0) / valid.length : 0
   }
+    const getRatingCount = () => {
+    if (!course?.course_reviews?.length) return 0
+    return course.course_reviews.filter(r => r.rating !== null).length
+  }
+
 
   const formatPrice = (cents: number | null) => {
     if (cents === 0) return 'Grátis'
@@ -137,7 +143,25 @@ export default function StudentCourseDetails() {
   if (!course) return <div className="p-10 text-center">Curso não encontrado</div>
 
   const rating = getRating()
+  const ratingCount = getRatingCount()
   const isInCart = items.some(item => item.id === course.id)
+    const existingRating = course.course_reviews.find(
+    (review) => review.student_id === userId && review.rating !== null
+  )?.rating ?? null
+
+  const handleRatingSaved = (ratingValue: number) => {
+    setCourse((prev) => {
+      if (!prev) return prev
+      const nextReviews = [...prev.course_reviews]
+      const existingIndex = nextReviews.findIndex((review) => review.student_id === userId)
+      if (existingIndex >= 0) {
+        nextReviews[existingIndex] = { ...nextReviews[existingIndex], rating: ratingValue }
+      } else {
+        nextReviews.push({ rating: ratingValue, student_id: userId })
+      }
+      return { ...prev, course_reviews: nextReviews }
+    })
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 pb-12 animate-in fade-in duration-500">
@@ -172,7 +196,7 @@ export default function StudentCourseDetails() {
                     </div>
                     <div className="flex items-center gap-1">
                         <span className="text-yellow-500 font-bold">★ {rating.toFixed(1)}</span>
-                        <span>({course.course_reviews.length} avaliações)</span>
+                        <span>({ratingCount} avaliações)</span>
                     </div>
                     <div>Atualizado em {new Date(course.updated_at).toLocaleDateString('pt-BR')}</div>
                 </div>
@@ -182,6 +206,14 @@ export default function StudentCourseDetails() {
                 <h2 className="text-xl font-bold mb-4">Sobre este curso</h2>
                 <p className="text-text-secondary leading-relaxed whitespace-pre-wrap">{course.description}</p>
             </div>
+                        <CourseRatingCard
+              courseId={course.id}
+              studentId={userId}
+              isEnrolled={isEnrolled}
+              initialRating={existingRating}
+              onRatingSaved={handleRatingSaved}
+            />
+
 
             <div>
                 <h2 className="text-xl font-bold mb-6">Conteúdo do curso</h2>

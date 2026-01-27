@@ -18,6 +18,10 @@ export function TeacherCourseCard({ course, onEdit }: TeacherCourseCardProps) {
     const sum = validReviews.reduce((acc, curr) => acc + (curr.rating || 0), 0)
     return sum / validReviews.length
   }
+    const getRatingCount = (reviews: { rating: number | null }[]) => {
+    return reviews.filter((review) => review.rating !== null).length
+  }
+
 
   const formatPrice = (priceCents: number | null) => {
     if (priceCents === null || priceCents === 0) return 'Grátis'
@@ -35,6 +39,7 @@ export function TeacherCourseCard({ course, onEdit }: TeacherCourseCardProps) {
   }
 
   const rating = getAverageRating(course.course_reviews)
+  const ratingCount = getRatingCount(course.course_reviews)
   const categorySlug = course.categories?.slug
 
   return (
@@ -69,7 +74,7 @@ export function TeacherCourseCard({ course, onEdit }: TeacherCourseCardProps) {
         <div className="flex items-center gap-1 mb-4 text-sm mt-auto pt-2">
           <span className="text-yellow-500">★</span>
           <span className="font-medium text-text-primary">{rating.toFixed(1)}</span>
-          <span className="text-text-secondary text-xs ml-1">({course.course_reviews.length})</span>
+          <span className="text-text-secondary text-xs ml-1">({ratingCount})</span>
         </div>
 
         {/* Rodapé: Preço e Botão */}
