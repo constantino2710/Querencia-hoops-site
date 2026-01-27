@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-import { useTheme } from '../ThemeContext' // <--- Importe o tema
+import { useTheme } from '../ThemeContext'
 
 export function Register() {
   const navigate = useNavigate()
-  const { theme, toggleTheme } = useTheme() // <--- Hook do tema
+  const { theme, toggleTheme } = useTheme()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,7 +23,7 @@ export function Register() {
       password,
       options: {
         data: {
-          display_name: name, // Envia o nome como metadado
+          display_name: name,
         },
       },
     })
@@ -34,7 +34,7 @@ export function Register() {
       return
     }
 
-    // 2. Tenta atualizar o perfil público (caso o Trigger falhe ou demore)
+    // 2. Tenta atualizar o perfil público
     if (data.user) {
       await supabase
         .from('users')
@@ -47,33 +47,37 @@ export function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-300 relative">
+    <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-300 relative p-4">
       
-      {/* BOTÃO DE TEMA */}
+      {/* BOTÃO DE TEMA - Responsivo e com feedback tátil */}
       <button
         onClick={toggleTheme}
-        className="absolute top-6 right-6 p-2 rounded-full bg-surface border border-border text-text-primary hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        className="absolute top-4 right-4 md:top-6 md:right-6 p-2.5 rounded-full bg-surface border border-border text-text-primary hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shadow-sm active:scale-95"
         title="Trocar Tema"
       >
         {theme === 'light' ? '🌙' : '☀️'}
       </button>
 
       {/* CARD DE REGISTRO */}
-      <div className="bg-surface p-8 rounded-lg shadow-md border border-border w-full max-w-md transition-colors duration-300">
-        <h1 className="text-2xl font-bold mb-6 text-center text-text-primary">Crie sua Conta</h1>
+      <div className="bg-surface p-6 md:p-8 rounded-xl shadow-lg border border-border w-full max-w-[420px] transition-colors duration-300">
+        <header className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Crie sua Conta</h1>
+          <p className="text-text-secondary text-sm mt-2">Preencha os dados abaixo para começar</p>
+        </header>
 
         {errorMsg && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+          <div className="mb-6 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 rounded text-sm animate-pulse">
             {errorMsg}
           </div>
         )}
 
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-5">
           <div>
-            <label className="block mb-1 text-sm font-medium text-text-secondary">Nome Completo</label>
+            <label className="block mb-1.5 text-sm font-semibold text-text-secondary">Nome Completo</label>
             <input
               type="text"
-              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+              placeholder="Ex: João Silva"
+              className="w-full p-3 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-base"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -81,10 +85,11 @@ export function Register() {
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium text-text-secondary">E-mail</label>
+            <label className="block mb-1.5 text-sm font-semibold text-text-secondary">E-mail</label>
             <input
               type="email"
-              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+              placeholder="seu@email.com"
+              className="w-full p-3 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-base"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -92,10 +97,11 @@ export function Register() {
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium text-text-secondary">Senha</label>
+            <label className="block mb-1.5 text-sm font-semibold text-text-secondary">Senha</label>
             <input
               type="password"
-              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+              placeholder="Mínimo 6 caracteres"
+              className="w-full p-3 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-base"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -106,18 +112,20 @@ export function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded transition-colors disabled:opacity-50"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-md"
           >
-            {loading ? 'Cadastrando...' : 'Criar Conta'}
+            {loading ? 'Criando conta...' : 'Criar Conta'}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-text-secondary">
-          Já tem uma conta?{' '}
-          <Link to="/login" className="text-blue-500 hover:underline">
-            Faça Login
-          </Link>
-        </p>
+        <footer className="mt-8 pt-6 border-t border-border text-center">
+          <p className="text-sm text-text-secondary">
+            Já tem uma conta?{' '}
+            <Link to="/login" className="text-blue-500 hover:text-blue-600 font-semibold hover:underline">
+              Faça Login
+            </Link>
+          </p>
+        </footer>
       </div>
     </div>
   )

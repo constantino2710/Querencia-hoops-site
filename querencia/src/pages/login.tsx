@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-import { useTheme } from '../ThemeContext' // <--- Importe o tema
+import { useTheme } from '../ThemeContext'
 
 export function Login() {
   const navigate = useNavigate()
-  const { theme, toggleTheme } = useTheme() // <--- Hook do tema
+  const { theme, toggleTheme } = useTheme()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -30,33 +30,38 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-300 relative">
+    // p-4 adicionado para evitar que o card encoste nas bordas do celular
+    <div className="min-h-screen flex items-center justify-center bg-background transition-colors duration-300 relative p-4">
       
-      {/* BOTÃO DE TEMA (Canto Superior Direito) */}
+      {/* BOTÃO DE TEMA - Ajustado posicionamento para mobile */}
       <button
         onClick={toggleTheme}
-        className="absolute top-6 right-6 p-2 rounded-full bg-surface border border-border text-text-primary hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        className="absolute top-4 right-4 md:top-6 md:right-6 p-2.5 rounded-full bg-surface border border-border text-text-primary hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shadow-sm active:scale-95"
         title="Trocar Tema"
       >
         {theme === 'light' ? '🌙' : '☀️'}
       </button>
 
-      {/* CARD DE LOGIN */}
-      <div className="bg-surface p-8 rounded-lg shadow-md border border-border w-full max-w-md transition-colors duration-300">
-        <h1 className="text-2xl font-bold mb-6 text-center text-text-primary">Entrar no Sistema</h1>
+      {/* CARD DE LOGIN - max-w-md garante que não estique demais no desktop */}
+      <div className="bg-surface p-6 md:p-8 rounded-xl shadow-lg border border-border w-full max-w-[400px] transition-colors duration-300">
+        <header className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Entrar</h1>
+          <p className="text-text-secondary text-sm mt-2">Acesse sua conta para continuar</p>
+        </header>
 
         {errorMsg && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+          <div className="mb-6 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 rounded text-sm animate-pulse">
             {errorMsg}
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block mb-1 text-sm font-medium text-text-secondary">E-mail</label>
+            <label className="block mb-1.5 text-sm font-semibold text-text-secondary">E-mail</label>
             <input
               type="email"
-              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+              placeholder="seu@email.com"
+              className="w-full p-3 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base" // text-base evita zoom automático no iOS
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -64,10 +69,11 @@ export function Login() {
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium text-text-secondary">Senha</label>
+            <label className="block mb-1.5 text-sm font-semibold text-text-secondary">Senha</label>
             <input
               type="password"
-              className="w-full p-2 rounded border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+              placeholder="••••••••"
+              className="w-full p-3 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -77,18 +83,20 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition-colors disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-md"
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? 'Carregando...' : 'Entrar'}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-text-secondary">
-          Não tem uma conta?{' '}
-          <Link to="/register" className="text-blue-500 hover:underline">
-            Cadastre-se
-          </Link>
-        </p>
+        <footer className="mt-8 pt-6 border-t border-border text-center">
+          <p className="text-sm text-text-secondary">
+            Não tem uma conta?{' '}
+            <Link to="/register" className="text-blue-500 hover:text-blue-600 font-semibold hover:underline">
+              Cadastre-se
+            </Link>
+          </p>
+        </footer>
       </div>
     </div>
   )
