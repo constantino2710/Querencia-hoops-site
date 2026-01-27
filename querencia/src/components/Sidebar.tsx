@@ -28,12 +28,11 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       return () => mediaQuery.removeEventListener('change', handleChange)
     }
 
-    // Fallback para navegadores mais antigos
     mediaQuery.addListener(handleChange)
     return () => mediaQuery.removeListener(handleChange)
   }, [])
 
-  // Se estiver colapsado manualmente OU se for mobile, usamos o estado "compacto"
+  // Estado que define se a sidebar deve se comportar como compacta (mobile ou manual)
   const isCompact = isCollapsed || isMobile
 
   const menuItems = [
@@ -102,7 +101,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         >
           {theme === 'light' ? '🌙' : '☀️'}
         </button>
-        {/* Passamos o estado isCompact para os subcomponentes para que eles também escondam textos/detalhes */}
+        
         <SidebarUserProfile isCollapsed={isCompact} />
         <SidebarLogout isCollapsed={isCompact} />
       </div>

@@ -24,6 +24,7 @@ import AdminStudents from './pages/admin/AdminStudents'
 
 // --- PÁGINA DE PERFIL (COMUM) ---
 import ProfileSettings from './pages/ProfileSetings'
+import StudentCoursePlayer from './pages/student/StudentCoursePlayer'
 
 // Componente de Acesso Negado
 const Unauthorized = () => {
@@ -102,6 +103,7 @@ export default function App() {
                   <Route path="/student/explore" element={<StudentExplore />} />
                   <Route path="/student/dashboard" element={<StudentDashboard />} />
                   <Route path="/student/course/:id" element={<StudentCourseDetails />} />
+                  <Route path="/student/course/:id/player" element={<StudentCoursePlayer />} />
                 </Route>
 
                 {/* --- PROFESSOR --- */}
@@ -119,6 +121,7 @@ export default function App() {
                   <Route path="/admin/teachers" element={<AdminTeachers />} />
                   <Route path="/admin/students" element={<AdminStudents />} />
                 </Route>
+
               </Route>
             </Routes>
           </CartProvider>
