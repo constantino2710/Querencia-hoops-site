@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
-import { useTheme } from '../ThemeContext'
 import { SidebarUserProfile, SidebarLogout } from './SidebarUserArea'
 import { LayoutDashboard, Search, BookOpen, Users, UserCog, ChevronLeft, ChevronRight } from 'lucide-react'
 
-// Definição das propriedades que a Sidebar agora recebe
 interface SidebarProps {
   isCollapsed: boolean
   setIsCollapsed: (value: boolean) => void
@@ -13,7 +11,6 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const { role } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const location = useLocation()
   const [isMobile, setIsMobile] = useState(false)
 
@@ -32,7 +29,6 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     return () => mediaQuery.removeListener(handleChange)
   }, [])
 
-  // Estado que define se a sidebar deve se comportar como compacta (mobile ou manual)
   const isCompact = isCollapsed || isMobile
 
   const menuItems = [
@@ -45,10 +41,10 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     { label: 'Alunos', path: '/admin/students', roles: ['ADMIN'], icon: <Users size={20} /> },
   ]
 
-  const allowedItems = menuItems.filter(item => role && item.roles.includes(role))
+  const allowedItems = menuItems.filter((item) => role && item.roles.includes(role))
 
   return (
-    <aside 
+    <aside
       className={`bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-50 transition-all duration-300 w-20 ${
         isCollapsed ? 'md:w-20' : 'md:w-64'
       }`}
@@ -65,7 +61,9 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
 
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`p-2 rounded-lg text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors hidden md:flex ${isCollapsed ? 'mx-auto' : ''}`}
+          className={`p-2 rounded-lg text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors hidden md:flex ${
+            isCollapsed ? 'mx-auto' : ''
+          }`}
         >
           {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
@@ -80,12 +78,16 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
               to={item.path}
               title={isCompact ? item.label : ''}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                isActive 
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 font-semibold shadow-sm' 
+                isActive
+                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 font-semibold shadow-sm'
                   : 'text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-text-primary'
               } ${isCompact ? 'justify-center px-0' : ''}`}
             >
-              <span className={`flex items-center justify-center shrink-0 ${isActive ? '' : 'opacity-70 group-hover:opacity-100 transition-opacity'}`}>
+              <span
+                className={`flex items-center justify-center shrink-0 ${
+                  isActive ? '' : 'opacity-70 group-hover:opacity-100 transition-opacity'
+                }`}
+              >
                 {item.icon}
               </span>
               {!isCompact && <span className="whitespace-nowrap">{item.label}</span>}
@@ -94,14 +96,11 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         })}
       </nav>
 
-      <div className={`p-4 border-t border-border bg-gray-50/50 dark:bg-gray-800/20 shrink-0 flex flex-col gap-1 mt-auto ${isCompact ? 'items-center px-2' : ''}`}>
-        <button
-          onClick={toggleTheme}
-          className="p-2 w-full rounded-lg text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex justify-center mb-2"
-        >
-          {theme === 'light' ? '🌙' : '☀️'}
-        </button>
-        
+      <div
+        className={`p-4 border-t border-border bg-gray-50/50 dark:bg-gray-800/20 shrink-0 flex flex-col gap-1 mt-auto ${
+          isCompact ? 'items-center px-2' : ''
+        }`}
+      >
         <SidebarUserProfile isCollapsed={isCompact} />
         <SidebarLogout isCollapsed={isCompact} />
       </div>
