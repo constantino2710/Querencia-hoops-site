@@ -1,96 +1,61 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { supabase } from '../supabaseClient';
-import type { Database } from '../database.types';
+// src/services/enrollmentService.ts
+import { supabase } from '../supabaseClient'
 
-// Tipagens extraídas do seu schema do Supabase
-type EnrollmentInsert = Database['public']['Tables']['enrollments']['Insert'];
-type PaymentInsert = Database['public']['Tables']['payments']['Insert'];
+/**
+ * Cria matrículas para os cursos no carrinho, processando pagamentos e ganhos dos professores.
+ */
+export async function createMultipleEnrollments(userId: string, items: any[]) {
+  for (const item of items) {
+    try {
+      // 1. Criar a matrícula na tabela 'enrollments'
+      const { data: enrollment, error: enrollError } = await supabase
+        .from('enrollments')
+        .insert({
+          student_id: userId,
+          course_id: item.id,
+          price_paid_cents: item.priceCents || 0,
+          status: 'ACTIVE'
+        })
+        .select()
+        .single()
 
-interface CartItem {
-  id: string;
-  title: string;
-  priceCents: number;
-  teacherId: string;
-}
+      if (enrollError) throw enrollError
 
-export async function processEnrollmentCheckout(userId: string, items: CartItem[]) {
-  try {
-    // 1. Procurar os IDs de recebedor dos professores no banco
-    const teacherIds = items.map(item => item.teacherId).filter(Boolean);
-    const { data: teachers, error: tError } = await supabase
-      .from('users')
-      .select('id, pagarme_recipient_id')
-      .in('id', teacherIds);
+      // 2. Registar o pagamento na tabela 'payments'
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          enrollment_id: enrollment.id,
+          amount_cents: item.priceCents || 0,
+          provider: 'MANUAL',
+          status: 'PAID'
+        })
 
-    if (tError) throw tError;
+      if (paymentError) throw paymentError
 
-    // 2. Criar as matrículas iniciais (status vem da sua migração)
-    const enrollmentsToCreate: EnrollmentInsert[] = items.map(item => ({
-      student_id: userId,
-      course_id: item.id,
-      price_paid_cents: item.priceCents || 0,
-      status: 'CANCELED' // Aguarda o webhook para ativar
-    }));
+      // 3. Registar o ganho do professor na tabela 'teacher_earnings'
+      if (item.teacherId) {
+        const platformFeePercent = 0.05 // Taxa de 5% da plataforma
+        const grossAmount = item.priceCents || 0
+        const feeAmount = Math.round(grossAmount * platformFeePercent)
+        const netAmount = grossAmount - feeAmount
 
-    const { data: createdEnrollments, error: enrollError } = await supabase
-      .from('enrollments')
-      .insert(enrollmentsToCreate)
-      .select();
+        const { error: earningError } = await supabase
+          .from('teacher_earnings')
+          .insert({
+            enrollment_id: enrollment.id,
+            teacher_id: item.teacherId, 
+            gross_amount_cents: grossAmount,
+            platform_fee_cents: feeAmount,
+            net_amount_cents: netAmount
+          })
 
-    if (enrollError || !createdEnrollments) throw enrollError;
-
-    // 3. Preparar regras de Split
-    const splitRules: any[] = [];
-    const platformFeePercent = 0.05;
-
-    items.forEach(item => {
-      const teacher = teachers?.find(t => t.id === item.teacherId);
-      const grossAmount = item.priceCents || 0;
-      const feeAmount = Math.round(grossAmount * platformFeePercent);
-      const netAmount = grossAmount - feeAmount;
-
-      if (teacher?.pagarme_recipient_id) {
-        splitRules.push({
-          recipient_id: teacher.pagarme_recipient_id,
-          amount: netAmount,
-          type: 'flat',
-          options: { charge_processing_fee: true, liable: true }
-        });
-        splitRules.push({
-          recipient_id: import.meta.env.VITE_PLATFORM_RECIPIENT_ID,
-          amount: feeAmount,
-          type: 'flat',
-          options: { charge_processing_fee: false, liable: false }
-        });
+        if (earningError) throw earningError
       }
-    });
-
-    // 4. Invocar a Edge Function (Segurança)
-    const { data: pagarmeOrder, error: functionError } = await supabase.functions.invoke('process-pagarme-order', {
-      body: { userId, items, splitRules }
-    });
-
-    if (functionError) throw functionError;
-
-    // 5. Registar os pagamentos (Correção do erro de Overload e Enum)
-    const paymentsToCreate: PaymentInsert[] = createdEnrollments.map((enroll, index) => ({
-      enrollment_id: enroll.id,
-      amount_cents: items[index].priceCents,
-      provider: 'PAGARME',
-      provider_payment_id: String(pagarmeOrder.id),
-      status: 'PENDING' // Tipado corretamente via PaymentInsert
-    }));
-
-    const { error: paymentError } = await supabase
-      .from('payments')
-      .insert(paymentsToCreate);
-
-    if (paymentError) throw paymentError;
-
-    return pagarmeOrder;
-
-  } catch (error: any) {
-    console.error("Erro no checkout:", error.message);
-    throw error;
+    } catch (error: any) {
+      console.error(`Erro ao processar curso ${item.id}:`, error.message || error)
+      throw error 
+    }
   }
 }

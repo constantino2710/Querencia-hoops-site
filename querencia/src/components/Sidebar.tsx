@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { SidebarUserProfile, SidebarLogout } from './SidebarUserArea'
-import { LayoutDashboard, Search, BookOpen, Users, UserCog, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
+import { LayoutDashboard, Search, BookOpen, Users, UserCog, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface SidebarProps {
   isCollapsed: boolean
@@ -39,16 +39,14 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     { label: 'Visão Geral', path: '/admin/dashboard', roles: ['ADMIN'], icon: <LayoutDashboard size={20} /> },
     { label: 'Professores', path: '/admin/teachers', roles: ['ADMIN'], icon: <UserCog size={20} /> },
     { label: 'Alunos', path: '/admin/students', roles: ['ADMIN'], icon: <Users size={20} /> },
-    // Adicionado apenas o botão de configurações conforme solicitado
-    { label: 'Configurações', path: '/settings', roles: ['STUDENT', 'TEACHER', 'ADMIN'], icon: <Settings size={20} /> },
   ]
 
   const allowedItems = menuItems.filter((item) => role && item.roles.includes(role))
 
   return (
     <aside
-      className={`bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-50 transition-all duration-300 ${
-        isCollapsed ? 'w-20' : 'w-20 md:w-64'
+      className={`bg-surface border-r border-border h-screen flex flex-col fixed left-0 top-0 z-50 transition-all duration-300 w-20 ${
+        isCollapsed ? 'md:w-20' : 'md:w-64'
       }`}
     >
       <div className="h-16 flex items-center justify-between px-3 md:px-4 border-b border-border shrink-0 overflow-hidden">

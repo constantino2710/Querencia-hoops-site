@@ -1,14 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createContext, useContext, useEffect, useState } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabaseClient'
 
+// 1. Atualizamos a interface para incluir 'role' (singular)
 interface AuthContextType {
   session: Session | null
-  user: User | null // Necessário para o Dashboard
   userRoles: string[]
-  role: string | null
+  role: string | null // <--- NOVA PROPRIEDADE
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -20,8 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userRoles, setUserRoles] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
-  const user = session?.user ?? null
-
+  // 2. Lógica para determinar o cargo "Principal" (Prioridade: Admin > Teacher > Student)
   const role = userRoles.includes('ADMIN') ? 'ADMIN' 
     : userRoles.includes('TEACHER') ? 'TEACHER' 
     : userRoles.includes('STUDENT') ? 'STUDENT' 
@@ -30,8 +29,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session) fetchRoles(session.user.id)
-      else setLoading(false)
+      if (session) {
+        fetchRoles(session.user.id)
+      } else {
+        setLoading(false)
+      }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -56,12 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', userId)
 
       if (error) throw error
+
       if (data) {
-        const roles = data.map((item: any) => item.roles?.name?.trim().toUpperCase()).filter(Boolean)
+        const roles = data
+          .map((item: any) => item.roles?.name?.trim().toUpperCase()) 
+          .filter(Boolean)
         setUserRoles(roles) 
       }
     } catch (err) {
       console.error('Erro ao buscar roles:', err)
+      setUserRoles([])
     } finally {
       setLoading(false)
     }
@@ -72,8 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserRoles([])
   }
 
+  // 3. Passamos 'role' no valor do Provider
   return (
-    <AuthContext.Provider value={{ session, user, userRoles, role, loading, signOut }}>
+    <AuthContext.Provider value={{ session, userRoles, role, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   )
