@@ -1,109 +1,78 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react'
-import { supabase } from '../../supabaseClient'
-import { StatCard } from './components/StatCard'
-import { DollarSign, BookOpen, TrendingUp, GraduationCap } from 'lucide-react'
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../AuthContext';
+import { getTeacherBalance, type TeacherBalance } from '../../services/financeService';
+import {StatCard} from './components/StatCard';
+import { Wallet, Clock, CheckCircle } from 'lucide-react';
 
-export default function TeacherDashboard() {
-  const [stats, setStats] = useState({
-    totalNetEarnings: 0,
-    totalSalesCount: 0,
-    coursesCount: 0,
-    totalStudents: 0, 
-    avgRating: 0
-  })
-  const [, setLoading] = useState(true)
+const TeacherDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const [balance, setBalance] = useState<TeacherBalance | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
-
-  async function fetchDashboardData() {
-    try {
-      setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // 1. Ganhos líquidos (Busca da tabela teacher_earnings)
-      const { data: earningsData } = await supabase
-        .from('teacher_earnings')
-        .select('net_amount_cents')
-        .eq('teacher_id', user.id)
-
-      // 2. Vendas totais (Contagem de matrículas nos cursos deste professor)
-      const { count: salesCount } = await supabase
-        .from('enrollments')
-        .select('id, courses!inner(teacher_id)', { count: 'exact', head: true })
-        .eq('courses.teacher_id', user.id)
-
-      // 3. Contagem de cursos criados pelo professor
-      const { count: coursesCount } = await supabase
-        .from('courses')
-        .select('id', { count: 'exact', head: true })
-        .eq('teacher_id', user.id)
-
-      // 4. Total de Alunos Únicos (Filtra IDs de estudantes sem repetição)
-      const { data: studentsData } = await supabase
-        .from('enrollments')
-        .select('student_id, courses!inner(teacher_id)')
-        .eq('courses.teacher_id', user.id)
-
-      const uniqueStudents = studentsData ? new Set(studentsData.map(s => s.student_id)).size : 0
-
-      const totalNetCents = earningsData?.reduce((acc, curr) => acc + curr.net_amount_cents, 0) || 0
-
-      setStats({
-        totalNetEarnings: totalNetCents / 100,
-        totalSalesCount: salesCount || 0,
-        coursesCount: coursesCount || 0,
-        totalStudents: uniqueStudents,
-        avgRating: 4.8 
-      })
-
-    } catch (error: any) {
-      console.error('Erro ao carregar dashboard:', error.message)
-    } finally {
-      setLoading(false)
+    async function loadFinancialData() {
+      if (user?.id) {
+        const data = await getTeacherBalance(user.id);
+        setBalance(data);
+      }
+      setLoading(false);
     }
-  }
+    loadFinancialData();
+  }, [user]);
 
-  const formatBRL = (val: number) => 
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
+  const formatCurrency = (cents: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(cents / 100);
+  };
 
-return (
-  <div className="animate-in fade-in duration-500">
-    <div className=" bg-[rgb(var(--surface))] p-6 rounded-2xl shadow-sm border border-border">
-      <div className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Saldo Líquido" 
-          value={formatBRL(stats.totalNetEarnings)}
-          icon={<DollarSign className="w-6 h-6" />}
-          variant="green"
-          description="Total após taxas (5%)"
+  return (
+    <div className="p-6 space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold">Painel do Instrutor</h1>
+        <p className="text-gray-500">Gerencie seus cursos e acompanhe seus rendimentos.</p>
+      </div>
+
+      {/* Seção Financeira */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Saldo Disponível"
+          value={loading ? "Carregando..." : formatCurrency(balance?.available || 0)}
+          icon={<Wallet className="text-green-500" />}
+          description="Pronto para saque"
         />
-        <StatCard 
-          title="Vendas Totais" 
-          value={stats.totalSalesCount}
-          icon={<TrendingUp className="w-6 h-6" />}
-          variant="blue"
-          description="Matrículas realizadas"
+        <StatCard
+          title="A Receber"
+          value={loading ? "Carregando..." : formatCurrency(balance?.waiting_funds || 0)}
+          icon={<Clock className="text-blue-500" />}
+          description="Vendas processando"
         />
-        <StatCard 
-          title="Total de Alunos" 
-          value={stats.totalStudents}
-          icon={<GraduationCap className="w-6 h-6" />}
-          variant="purple"
-          description="Estudantes únicos"
-        />
-        <StatCard 
-          title="Meus Cursos" 
-          value={stats.coursesCount}
-          icon={<BookOpen className="w-6 h-6" />}
-          variant="yellow"
+        <StatCard
+          title="Total Sacado"
+          value={loading ? "Carregando..." : formatCurrency(balance?.transferred || 0)}
+          icon={<CheckCircle className="text-purple-500" />}
+          description="Enviado para sua conta"
         />
       </div>
+
+      {/* Botão de Saque - Integração com POST /transfers da Pagar.me */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border flex justify-between items-center">
+        <div>
+          <h3 className="font-semibold text-lg">Solicitar Transferência</h3>
+          <p className="text-sm text-gray-500">O valor disponível será enviado para sua conta bancária cadastrada.</p>
+        </div>
+        <button 
+          disabled={!balance || balance.available <= 0}
+          className="bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700 disabled:opacity-50 transition-colors"
+        >
+          Sacar Agora
+        </button>
+      </div>
+      
+      {/* Aqui continuariam seus componentes de lista de cursos */}
     </div>
-  </div>
-)
-}
+  );
+};
+
+export default TeacherDashboard;
