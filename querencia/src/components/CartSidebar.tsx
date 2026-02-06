@@ -1,4 +1,6 @@
-import { X, Trash2 } from 'lucide-react'
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState } from 'react'
+import { X, Trash2, Loader2, CreditCard } from 'lucide-react'
 import { useCart } from '../CartContext'
 
 const formatPrice = (cents: number | null) => {
@@ -8,12 +10,24 @@ const formatPrice = (cents: number | null) => {
 
 export function CartSidebar() {
   const { items, isOpen, closeCart, removeItem, clear, checkout } = useCart()
+  const [isProcessing, setIsProcessing] = useState(false)
+
+  const handleCheckout = async () => {
+    setIsProcessing(true)
+    try {
+      await checkout()
+    } catch (error) {
+      // O erro já é tratado com alert no Context, apenas liberamos o botão
+      setIsProcessing(false)
+    }
+  }
+
+  const totalPriceCents = items.reduce((acc, item) => acc + (item.priceCents || 0), 0)
 
   return (
     <>
       <button
         type="button"
-        aria-hidden={!isOpen}
         onClick={closeCart}
         className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -23,10 +37,8 @@ export function CartSidebar() {
         className={`fixed right-0 top-0 z-50 h-full w-full max-w-md bg-surface border-l border-border shadow-2xl transform transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
-        aria-hidden={!isOpen}
       >
         <div className="flex h-full flex-col">
-          {/* Cabeçalho */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div>
               <p className="text-sm text-text-secondary">Seu carrinho</p>
@@ -39,7 +51,6 @@ export function CartSidebar() {
             </button>
           </div>
 
-          {/* Lista de Itens */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 custom-scrollbar">
             {items.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-6 text-center text-text-secondary">
@@ -66,23 +77,38 @@ export function CartSidebar() {
             )}
           </div>
 
-          {/* Ações Finais */}
-          <div className="border-t border-border px-6 py-4 space-y-3">
+          <div className="border-t border-border px-6 py-4 space-y-3 bg-surface">
+            <div className="flex justify-between items-center px-1 mb-2">
+              <span className="text-sm font-medium text-text-secondary">Total:</span>
+              <span className="text-xl font-bold text-blue-600">{formatPrice(totalPriceCents)}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={items.length === 0 || isProcessing}
+              className="w-full rounded-lg bg-blue-600 py-4 text-white font-bold shadow-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-3 transition-all active:scale-95"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Preparando Pagamento...</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard size={20} />
+                  <span>Finalizar Matrícula</span>
+                </>
+              )}
+            </button>
+            
             <button
               type="button"
               onClick={clear}
-              disabled={items.length === 0}
-              className="w-full rounded-lg border border-border py-2 text-sm font-semibold text-text-secondary hover:bg-gray-100 disabled:opacity-50"
+              disabled={items.length === 0 || isProcessing}
+              className="w-full rounded-lg border border-border py-2 text-xs font-semibold text-text-secondary hover:bg-gray-100 disabled:opacity-50"
             >
               Limpar carrinho
-            </button>
-            <button
-              type="button"
-              onClick={checkout}
-              disabled={items.length === 0}
-              className="w-full rounded-lg bg-blue-600 py-3 text-white font-bold shadow-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              Finalizar Matrícula
             </button>
           </div>
         </div>

@@ -1,61 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/services/enrollmentService.ts
 import { supabase } from '../supabaseClient'
 
-/**
- * Cria matrículas para os cursos no carrinho, processando pagamentos e ganhos dos professores.
- */
-export async function createMultipleEnrollments(userId: string, items: any[]) {
-  for (const item of items) {
-    try {
-      // 1. Criar a matrícula na tabela 'enrollments'
-      const { data: enrollment, error: enrollError } = await supabase
-        .from('enrollments')
-        .insert({
-          student_id: userId,
-          course_id: item.id,
-          price_paid_cents: item.priceCents || 0,
-          status: 'ACTIVE'
-        })
-        .select()
-        .single()
+export async function createCheckoutSession(userId: string, items: any[]) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Sessão expirada. Faça login novamente.");
 
-      if (enrollError) throw enrollError
+    const { data: profile } = await supabase
+      .from('users')
+      .select('name, email') 
+      .eq('id', userId)
+      .single();
 
-      // 2. Registar o pagamento na tabela 'payments'
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .insert({
-          enrollment_id: enrollment.id,
-          amount_cents: item.priceCents || 0,
-          provider: 'MANUAL',
-          status: 'PAID'
-        })
+    const totalCents = items.reduce((acc, curr) => acc + (curr.priceCents || 0), 0);
 
-      if (paymentError) throw paymentError
+    // Chama a Edge Function 'create-payment'
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({
+        enrollment_id: crypto.randomUUID(),
+        amount: totalCents,
+        customer: {
+          name: profile?.name || 'Estudante',
+          email: profile?.email || session.user.email,
+          document: '00000000000' 
+        }
+      })
+    });
 
-      // 3. Registar o ganho do professor na tabela 'teacher_earnings'
-      if (item.teacherId) {
-        const platformFeePercent = 0.05 // Taxa de 5% da plataforma
-        const grossAmount = item.priceCents || 0
-        const feeAmount = Math.round(grossAmount * platformFeePercent)
-        const netAmount = grossAmount - feeAmount
-
-        const { error: earningError } = await supabase
-          .from('teacher_earnings')
-          .insert({
-            enrollment_id: enrollment.id,
-            teacher_id: item.teacherId, 
-            gross_amount_cents: grossAmount,
-            platform_fee_cents: feeAmount,
-            net_amount_cents: netAmount
-          })
-
-        if (earningError) throw earningError
-      }
-    } catch (error: any) {
-      console.error(`Erro ao processar curso ${item.id}:`, error.message || error)
-      throw error 
+    if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Erro no servidor de pagamento");
     }
+
+    const result = await response.json();
+    return result.checkout_url;
+  } catch (err: any) {
+    throw new Error(err.message);
   }
 }
