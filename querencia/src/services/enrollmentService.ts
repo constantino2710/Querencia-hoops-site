@@ -2,44 +2,42 @@
 import { supabase } from '../supabaseClient'
 
 export async function createCheckoutSession(userId: string, items: any[]) {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Sessão expirada. Faça login novamente.");
+  // 1. Busca apenas nome e email do usuário (dados básicos do Auth)
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-    const { data: profile } = await supabase
-      .from('users')
-      .select('name, email') 
-      .eq('id', userId)
-      .single();
+  if (userError || !user) {
+    throw new Error('Usuário não autenticado. Faça login novamente.')
+  }
 
-    const totalCents = items.reduce((acc, curr) => acc + (curr.priceCents || 0), 0);
+  // Calcula o total em centavos
+  const totalAmount = items.reduce((acc, item) => acc + (item.priceCents || 0), 0)
 
-    // Chama a Edge Function 'create-payment'
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`, {
+  // 2. Envia apenas dados mínimos - Pagar.me coleta o resto no checkout
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  const response = await fetch(
+    'https://akotfntkzzkjguhlumcb.supabase.co/functions/v1/create-payment',
+    {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
+        'Authorization': `Bearer ${session?.access_token}`
       },
       body: JSON.stringify({
-        enrollment_id: crypto.randomUUID(),
-        amount: totalCents,
+        amount: totalAmount,
         customer: {
-          name: profile?.name || 'Estudante',
-          email: profile?.email || session.user.email,
-          document: '00000000000' 
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'Cliente',
+          email: user.email
         }
       })
-    });
-
-    if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || "Erro no servidor de pagamento");
     }
+  )
 
-    const result = await response.json();
-    return result.checkout_url;
-  } catch (err: any) {
-    throw new Error(err.message);
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || 'Erro ao processar checkout na Pagar.me')
   }
+
+  return data.checkout_url
 }
