@@ -1,0 +1,1 @@
+ALTER TABLE public.enrollments ALTER COLUMN status SET DEFAULT 'PENDING';

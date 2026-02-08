@@ -18,6 +18,7 @@ export interface CartItem {
 interface CartContextValue {
   items: CartItem[]
   isOpen: boolean
+  isCheckingOut: boolean
   addItem: (item: CartItem) => void
   removeItem: (id: string) => void
   clear: () => void
@@ -32,7 +33,8 @@ const CartContext = createContext<CartContextValue | undefined>(undefined)
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [isOpen, setIsOpen] = useState(false)
-  const { session } = useAuth() // Obtém a sessão do usuário logado
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const { session } = useAuth()
 
   // Adiciona um item ao carrinho, evitando duplicatas
   const addItem = useCallback((item: CartItem) => {
@@ -40,7 +42,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (prev.some(exists => exists.id === item.id)) return prev
       return [...prev, item]
     })
-    setIsOpen(true) // Abre o carrinho automaticamente ao adicionar
+    setIsOpen(true)
   }, [])
 
   // Remove um item específico pelo ID
@@ -71,19 +73,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
+    setIsCheckingOut(true)
+
     try {
-      // Chama o serviço que busca o perfil e cria a ordem na Pagar.me
+      console.log('🛒 Iniciando checkout com itens:', items)
+      console.log('👤 User ID:', session.user.id)
+
+      // Chama o serviço que cria enrollments e processa pagamento
       const checkoutUrl = await createCheckoutSession(session.user.id, items)
       
       if (checkoutUrl) {
-        clear() // Limpa o carrinho local antes de redirecionar
-        // Redireciona o usuário para a página de pagamento segura da Pagar.me
+        console.log('✅ Checkout URL recebida:', checkoutUrl)
+        clear()
         window.location.href = checkoutUrl 
       }
     } catch (error: any) {
-      console.error('Erro no fluxo de checkout:', error)
-      // Exibe mensagens de erro amigáveis (ex: Perfil incompleto ou erro na API)
-      alert(error.message || 'Erro ao processar checkout. Verifique seus dados de perfil.')
+      console.error('❌ Erro no fluxo de checkout:', error)
+      alert(error.message || 'Erro ao processar checkout. Tente novamente.')
+    } finally {
+      setIsCheckingOut(false)
     }
   }, [items, session, clear])
 
@@ -91,6 +99,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     items, 
     isOpen, 
+    isCheckingOut,
     addItem, 
     removeItem, 
     clear, 
@@ -98,7 +107,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     closeCart, 
     toggleCart, 
     checkout
-  }), [items, isOpen, addItem, removeItem, clear, openCart, closeCart, toggleCart, checkout])
+  }), [items, isOpen, isCheckingOut, addItem, removeItem, clear, openCart, closeCart, toggleCart, checkout])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

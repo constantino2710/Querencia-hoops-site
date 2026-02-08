@@ -25,7 +25,6 @@ interface EnrolledCourse {
   } | null
 }
 
-// Type guard: garante pra TS que course não é null
 type EnrolledCourseWithCourse = EnrolledCourse & { course: NonNullable<EnrolledCourse['course']> }
 
 export default function StudentDashboard() {
@@ -35,7 +34,6 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     fetchMyCourses()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchMyCourses() {
@@ -52,7 +50,6 @@ export default function StudentDashboard() {
 
       setUserId(user.id)
 
-      // ✅ Melhor: INNER JOIN para não retornar enrollments sem course
       const { data, error } = await supabase
         .from('enrollments')
         .select(
@@ -75,7 +72,6 @@ export default function StudentDashboard() {
 
       if (error) throw error
 
-      // Mesmo com !inner, deixo o tipo como possível null (defensivo)
       setEnrolledCourses((data ?? []) as unknown as EnrolledCourse[])
     } catch (error: any) {
       console.error('Erro ao buscar seus cursos:', error?.message || error)
@@ -84,7 +80,6 @@ export default function StudentDashboard() {
     }
   }
 
-  // ✅ Sanitiza qualquer caso inesperado: remove itens com course null
   const validEnrollments = useMemo(() => {
     return enrolledCourses.filter((e): e is EnrolledCourseWithCourse => !!e.course)
   }, [enrolledCourses])
@@ -97,7 +92,6 @@ export default function StudentDashboard() {
         item.course.course_sections?.flatMap((section) => section.lessons ?? []) ?? []
 
       const lessonIds = lessons.map((lesson) => lesson.id)
-
       const progress = getStoredCourseProgress(userId, item.course.id, lessonIds)
       return [item.course.id, progress] as const
     })
@@ -121,7 +115,11 @@ export default function StudentDashboard() {
   }, [validEnrollments, progressByCourse])
 
   return (
-    <div className="flex flex-col w-full h-full min-h-0">
+    /* Ajuste aqui: 
+       - overflow-y-auto garante que o scroll apareça se o conteúdo exceder a tela.
+       - min-h-screen permite que o container cresça conforme o número de cards.
+    */
+    <div className="flex flex-col w-full min-h-screen overflow-y-auto bg-transparent p-1">
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
@@ -137,7 +135,8 @@ export default function StudentDashboard() {
           </a>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-10"> {/* pb-10 garante respiro no final do scroll */}
+          {/* Dashboard Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <StatCard
               title="Cursos comprados"
@@ -153,6 +152,7 @@ export default function StudentDashboard() {
             />
           </div>
 
+          {/* Grid de Cursos */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {validEnrollments.map((item) => (
               <CourseCard

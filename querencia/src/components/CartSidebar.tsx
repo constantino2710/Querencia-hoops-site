@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState } from 'react'
 import { X, Trash2, Loader2, CreditCard } from 'lucide-react'
 import { useCart } from '../CartContext'
 
@@ -9,18 +8,8 @@ const formatPrice = (cents: number | null) => {
 }
 
 export function CartSidebar() {
-  const { items, isOpen, closeCart, removeItem, clear, checkout } = useCart()
-  const [isProcessing, setIsProcessing] = useState(false)
-
-  const handleCheckout = async () => {
-    setIsProcessing(true)
-    try {
-      await checkout()
-    } catch (error) {
-      // O erro já é tratado com alert no Context, apenas liberamos o botão
-      setIsProcessing(false)
-    }
-  }
+  // ✅ Agora pegamos isCheckingOut do contexto (não precisa de estado local)
+  const { items, isOpen, isCheckingOut, closeCart, removeItem, clear, checkout } = useCart()
 
   const totalPriceCents = items.reduce((acc, item) => acc + (item.priceCents || 0), 0)
 
@@ -39,6 +28,7 @@ export function CartSidebar() {
         }`}
       >
         <div className="flex h-full flex-col">
+          {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div>
               <p className="text-sm text-text-secondary">Seu carrinho</p>
@@ -46,11 +36,16 @@ export function CartSidebar() {
                 {items.length > 0 ? `${items.length} curso${items.length > 1 ? 's' : ''}` : 'Carrinho vazio'}
               </h3>
             </div>
-            <button onClick={closeCart} className="rounded-full p-2 text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <button 
+              onClick={closeCart} 
+              className="rounded-full p-2 text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              disabled={isCheckingOut} // ✅ Desabilita fechar durante checkout
+            >
               <X size={20} />
             </button>
           </div>
 
+          {/* Items List */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 custom-scrollbar">
             {items.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-6 text-center text-text-secondary">
@@ -67,7 +62,11 @@ export function CartSidebar() {
                     <p className="text-xs text-text-secondary">Prof. {item.teacherName}</p>
                     <div className="mt-2 flex items-center justify-between">
                       <span className="font-bold text-blue-600">{formatPrice(item.priceCents)}</span>
-                      <button onClick={() => removeItem(item.id)} className="text-text-secondary hover:text-red-500">
+                      <button 
+                        onClick={() => removeItem(item.id)} 
+                        className="text-text-secondary hover:text-red-500 disabled:opacity-50"
+                        disabled={isCheckingOut} // ✅ Desabilita remover durante checkout
+                      >
                         <Trash2 size={18} />
                       </button>
                     </div>
@@ -77,19 +76,21 @@ export function CartSidebar() {
             )}
           </div>
 
+          {/* Footer com totais e botões */}
           <div className="border-t border-border px-6 py-4 space-y-3 bg-surface">
             <div className="flex justify-between items-center px-1 mb-2">
               <span className="text-sm font-medium text-text-secondary">Total:</span>
               <span className="text-xl font-bold text-blue-600">{formatPrice(totalPriceCents)}</span>
             </div>
 
+            {/* ✅ Botão de checkout usando isCheckingOut do contexto */}
             <button
               type="button"
-              onClick={handleCheckout}
-              disabled={items.length === 0 || isProcessing}
-              className="w-full rounded-lg bg-blue-600 py-4 text-white font-bold shadow-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-3 transition-all active:scale-95"
+              onClick={checkout}
+              disabled={items.length === 0 || isCheckingOut}
+              className="w-full rounded-lg bg-blue-600 py-4 text-white font-bold shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all active:scale-95"
             >
-              {isProcessing ? (
+              {isCheckingOut ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span>Preparando Pagamento...</span>
@@ -102,11 +103,12 @@ export function CartSidebar() {
               )}
             </button>
             
+            {/* Botão limpar carrinho */}
             <button
               type="button"
               onClick={clear}
-              disabled={items.length === 0 || isProcessing}
-              className="w-full rounded-lg border border-border py-2 text-xs font-semibold text-text-secondary hover:bg-gray-100 disabled:opacity-50"
+              disabled={items.length === 0 || isCheckingOut}
+              className="w-full rounded-lg border border-border py-2 text-xs font-semibold text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Limpar carrinho
             </button>

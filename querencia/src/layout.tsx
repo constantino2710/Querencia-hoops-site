@@ -5,7 +5,7 @@ import { CartSidebar } from './components/CartSidebar'
 import { Header } from './components/header'
 
 export function Layout() {
-  const [isCollapsed, setIsCollapsed] = useState(false) // Estado centralizado
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const isCompact = isCollapsed || isMobile
   const location = useLocation()
@@ -14,35 +14,31 @@ export function Layout() {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 767px)')
     const handleChange = () => setIsMobile(mediaQuery.matches)
-
     handleChange()
 
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange)
-      return () => mediaQuery.removeEventListener('change', handleChange)
-    }
-
-    mediaQuery.addListener(handleChange)
-    return () => mediaQuery.removeListener(handleChange)
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
   }, [])
 
   return (
-   <div className="flex h-screen bg-background text-text-primary transition-colors duration-300">      
-      {/* Passamos o estado e a função para a Sidebar */}
+    <div className="flex h-screen w-full bg-background text-text-primary transition-colors duration-300 overflow-hidden">      
       {!isPlayerRoute && (
         <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       )}
 
-      {/* O main agora reage diretamente ao estado do Layout */}
       <main 
-        className={`flex-1 flex flex-col min-h-0 transition-all duration-300 ${
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
           isPlayerRoute ? 'ml-0' : 'ml-20'
         } ${isPlayerRoute ? '' : isCompact ? 'md:ml-20' : 'md:ml-64'}`}
       >
         {!isPlayerRoute && <Header />}
         
-        <div className={`${isPlayerRoute ? 'p-0' : 'p-4 md:p-8'} flex-1 min-h-0 overflow-hidden bg-background`}>
-          <div className={`${isPlayerRoute ? 'w-full' : 'max-w-[1600px] mx-auto w-full'}`}>
+        {/* A mágica acontece aqui:
+           - overflow-y-auto: Só mostra o scroll se precisar.
+           - h-full: Ocupa o espaço restante abaixo do Header.
+        */}
+        <div className={`flex-1 overflow-y-auto ${isPlayerRoute ? 'p-0' : 'p-4 md:p-8'}`}>
+          <div className={`${isPlayerRoute ? 'w-full' : 'max-w-[1600px] mx-auto w-full'} pb-12`}>
             <Outlet />
           </div>
         </div>
