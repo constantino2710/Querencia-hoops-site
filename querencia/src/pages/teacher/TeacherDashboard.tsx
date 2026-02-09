@@ -31,11 +31,12 @@ export default function TeacherDashboard() {
         .select('net_amount_cents')
         .eq('teacher_id', user.id)
 
-      // 2. Vendas totais (Contagem de matrículas nos cursos deste professor)
+      // 2. Vendas totais (Contagem de matrículas ATIVAS nos cursos deste professor)
       const { count: salesCount } = await supabase
         .from('enrollments')
         .select('id, courses!inner(teacher_id)', { count: 'exact', head: true })
         .eq('courses.teacher_id', user.id)
+        .eq('status', 'ACTIVE')
 
       // 3. Contagem de cursos criados pelo professor
       const { count: coursesCount } = await supabase
@@ -43,11 +44,12 @@ export default function TeacherDashboard() {
         .select('id', { count: 'exact', head: true })
         .eq('teacher_id', user.id)
 
-      // 4. Total de Alunos Únicos (Filtra IDs de estudantes sem repetição)
+      // 4. Total de Alunos Únicos ATIVOS (Filtra IDs de estudantes sem repetição)
       const { data: studentsData } = await supabase
         .from('enrollments')
         .select('student_id, courses!inner(teacher_id)')
         .eq('courses.teacher_id', user.id)
+        .eq('status', 'ACTIVE')
 
       const uniqueStudents = studentsData ? new Set(studentsData.map(s => s.student_id)).size : 0
 

@@ -35,11 +35,12 @@ export default function StudentExplore() {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
-        // 2. Procurar cursos onde o aluno já está matriculado
+        // 2. Procurar cursos onde o aluno já está matriculado (apenas ACTIVE)
         const { data: enrollments, error: enrollError } = await supabase
           .from('enrollments')
           .select('course_id')
           .eq('student_id', user.id)
+          .eq('status', 'ACTIVE')
 
         if (enrollError) throw enrollError
         

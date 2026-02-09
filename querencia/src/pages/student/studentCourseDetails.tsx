@@ -87,7 +87,7 @@ export default function StudentCourseDetails() {
             setExpandedSections({ [sortedData.course_sections[0].id]: true })
         }
 
-        // 2. VERIFICAÇÃO DE MATRÍCULA CRÍTICA
+        // 2. VERIFICAÇÃO DE MATRÍCULA CRÍTICA (apenas ACTIVE)
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
           setUserId(session.user.id)
@@ -96,6 +96,7 @@ export default function StudentCourseDetails() {
             .select('id')
             .eq('course_id', id)
             .eq('student_id', session.user.id)
+            .eq('status', 'ACTIVE')
             .maybeSingle()
 
           if (enrollment) {
