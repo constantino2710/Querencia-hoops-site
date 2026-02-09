@@ -32,7 +32,7 @@ export function StudentStatsCard({ student, stats }: StudentStatsCardProps) {
         {student.avatar_url ? (
           <img
             src={student.avatar_url}
-            alt={student.name}
+            alt={student.name ?? undefined}
             className="w-12 h-12 rounded-full object-cover"
           />
         ) : (
