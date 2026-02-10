@@ -18,6 +18,7 @@ export function Header() {
     '/admin/dashboard': 'Painel Admin',
     '/admin/teachers': 'Gestão de Professores',
     '/admin/students': 'Gestão de Alunos',
+    '/admin/settings': 'Configurações',
     '/profile': 'Meu Perfil',
   }
 

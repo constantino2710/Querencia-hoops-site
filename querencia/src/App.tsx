@@ -21,6 +21,7 @@ import TeacherCreateCourse from './pages/teacher/TeacherCreateCourse'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminTeachers from './pages/admin/AdminTeachers'
 import AdminStudents from './pages/admin/AdminStudents'
+import AdminSettings from './pages/admin/AdminSettings'
 
 // --- PÁGINA DE PERFIL (COMUM) ---
 import ProfileSettings from './pages/ProfileSetings'
@@ -31,7 +32,7 @@ const Unauthorized = () => {
   const { userRoles } = useAuth()
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-red-50 text-red-800">
-      <h1 className="text-3xl font-bold mb-2">⛔ Acesso Negado</h1>
+      <h1 className="text-3xl font-bold mb-2">Acesso Negado</h1>
       <p>Seu perfil não tem permissão para ver esta página.</p>
       <div className="mt-4 p-4 bg-white rounded border border-red-200 text-sm font-mono text-gray-600">
         <p>Seus Cargos: {JSON.stringify(userRoles)}</p>
@@ -120,6 +121,7 @@ export default function App() {
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/teachers" element={<AdminTeachers />} />
                   <Route path="/admin/students" element={<AdminStudents />} />
+                  <Route path="/admin/settings" element={<AdminSettings />} />
                 </Route>
 
               </Route>

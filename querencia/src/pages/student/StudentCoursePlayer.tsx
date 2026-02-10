@@ -55,26 +55,28 @@ function getYoutubeEmbedUrl(url: string | null) {
   if (!url) return null
   try {
     const parsed = new URL(url)
+    let videoId: string | null = null
 
     // youtu.be/<id>
     if (parsed.hostname.includes('youtu.be')) {
-      const id = parsed.pathname.replace('/', '')
-      return id ? `https://www.youtube.com/embed/${id}` : null
+      videoId = parsed.pathname.replace('/', '') || null
     }
 
     // youtube.com/watch?v=<id>
     if (parsed.hostname.includes('youtube.com')) {
-      const v = parsed.searchParams.get('v')
-      if (v) return `https://www.youtube.com/embed/${v}`
-
-      // youtube.com/shorts/<id>
-      const shorts = parsed.pathname.match(/\/shorts\/([^/]+)/)?.[1]
-      if (shorts) return `https://www.youtube.com/embed/${shorts}`
-
-      // youtube.com/embed/<id>
-      const embed = parsed.pathname.match(/\/embed\/([^/]+)/)?.[1]
-      if (embed) return `https://www.youtube.com/embed/${embed}`
+      videoId = parsed.searchParams.get('v')
+        || parsed.pathname.match(/\/shorts\/([^/]+)/)?.[1]
+        || parsed.pathname.match(/\/embed\/([^/]+)/)?.[1]
+        || null
     }
+
+    if (!videoId) return null
+
+    // nocookie = mais privacidade, sem cookies de rastreamento
+    // modestbranding = remove logo grande do YouTube
+    // rel=0 = não mostra vídeos de outros canais no final
+    const params = 'modestbranding=1&rel=0'
+    return `https://www.youtube-nocookie.com/embed/${videoId}?${params}`
   } catch {
     return null
   }

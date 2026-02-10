@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '../../../../supabaseClient'
+
 interface VideoPanelProps {
   title: string
   description?: string | null
@@ -5,9 +8,26 @@ interface VideoPanelProps {
 }
 
 export function VideoPanel({ title, description, embedUrl }: VideoPanelProps) {
+  const [watermark, setWatermark] = useState('')
+
+  useEffect(() => {
+    async function fetchWatermark() {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('watermark_text')
+        .limit(1)
+        .single()
+
+      if (data?.watermark_text) {
+        setWatermark(data.watermark_text)
+      }
+    }
+    fetchWatermark()
+  }, [])
+
   return (
     <section className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
-      <div className="aspect-video bg-black">
+      <div className="aspect-video bg-black relative" onContextMenu={(e) => e.preventDefault()}>
         {embedUrl ? (
           <iframe
             className="w-full h-full"
@@ -19,6 +39,15 @@ export function VideoPanel({ title, description, embedUrl }: VideoPanelProps) {
         ) : (
           <div className="w-full h-full flex items-center justify-center text-text-secondary">
             Vídeo indisponível para esta aula
+          </div>
+        )}
+
+        {/* Watermark overlay */}
+        {watermark && (
+          <div className="absolute bottom-3 right-3 pointer-events-none select-none">
+            <span className="text-white/70 text-xs md:text-sm font-semibold whitespace-nowrap">
+              {watermark}
+            </span>
           </div>
         )}
       </div>

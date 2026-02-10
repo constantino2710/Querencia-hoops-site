@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { SidebarUserProfile, SidebarLogout } from './SidebarUserArea'
-import { LayoutDashboard, Search, BookOpen, Users, UserCog, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, Search, BookOpen, Users, UserCog, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
 
 interface SidebarProps {
   isCollapsed: boolean
@@ -39,6 +39,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     { label: 'Visão Geral', path: '/admin/dashboard', roles: ['ADMIN'], icon: <LayoutDashboard size={20} /> },
     { label: 'Professores', path: '/admin/teachers', roles: ['ADMIN'], icon: <UserCog size={20} /> },
     { label: 'Alunos', path: '/admin/students', roles: ['ADMIN'], icon: <Users size={20} /> },
+    { label: 'Configurações', path: '/admin/settings', roles: ['ADMIN'], icon: <Settings size={20} /> },
   ]
 
   const allowedItems = menuItems.filter((item) => role && item.roles.includes(role))
