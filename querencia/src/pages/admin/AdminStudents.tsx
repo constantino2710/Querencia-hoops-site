@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import { StudentStatsCard } from './components/StudentStatsCard'
+import { AdminGrantModal } from './components/AdminGrantModal'
 
 interface Student {
   id: string
@@ -14,6 +15,7 @@ interface Student {
 interface StudentWithStats extends Student {
   stats: {
     enrollmentsCount: number
+    adminGrantsCount: number
     totalSpent: number
   }
 }
@@ -23,6 +25,9 @@ export default function AdminStudents() {
   const [filteredStudents, setFilteredStudents] = useState<StudentWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [grantModalOpen, setGrantModalOpen] = useState(false)
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>()
+  const [selectedStudentName, setSelectedStudentName] = useState<string | undefined>()
 
   useEffect(() => {
     fetchStudentsData()
@@ -71,7 +76,7 @@ export default function AdminStudents() {
       // - Total gasto (sum de price_paid_cents de enrollments ACTIVE)
       const { data: enrollments } = await supabase
         .from('enrollments')
-        .select('student_id, price_paid_cents')
+        .select('student_id, price_paid_cents, is_admin_grant')
         .eq('status', 'ACTIVE')
 
       // 4. Agregar dados por estudante
@@ -79,17 +84,18 @@ export default function AdminStudents() {
         // Enrollments do estudante
         const studentEnrollments = enrollments?.filter((e) => e.student_id === student.id) || []
         const enrollmentsCount = studentEnrollments.length
+        const adminGrantsCount = studentEnrollments.filter((e) => e.is_admin_grant).length
 
-        // Total gasto
-        const totalSpent = studentEnrollments.reduce(
-          (acc, curr) => acc + (curr.price_paid_cents || 0),
-          0
-        )
+        // Total gasto (apenas matrículas pagas)
+        const totalSpent = studentEnrollments
+          .filter((e) => !e.is_admin_grant)
+          .reduce((acc, curr) => acc + (curr.price_paid_cents || 0), 0)
 
         return {
           ...student,
           stats: {
             enrollmentsCount,
+            adminGrantsCount,
             totalSpent,
           },
         }
@@ -147,11 +153,33 @@ export default function AdminStudents() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredStudents.map((student) => (
-              <StudentStatsCard key={student.id} student={student} stats={student.stats} />
+              <StudentStatsCard
+                key={student.id}
+                student={student}
+                stats={student.stats}
+                onGrantAccess={(studentId, studentName) => {
+                  setSelectedStudentId(studentId)
+                  setSelectedStudentName(studentName)
+                  setGrantModalOpen(true)
+                }}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal de Concessão */}
+      <AdminGrantModal
+        isOpen={grantModalOpen}
+        onClose={() => {
+          setGrantModalOpen(false)
+          setSelectedStudentId(undefined)
+          setSelectedStudentName(undefined)
+        }}
+        onSuccess={fetchStudentsData}
+        preSelectedStudentId={selectedStudentId}
+        preSelectedStudentName={selectedStudentName}
+      />
     </div>
   )
 }

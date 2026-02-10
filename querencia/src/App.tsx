@@ -23,6 +23,8 @@ import AdminTeachers from './pages/admin/AdminTeachers'
 import AdminStudents from './pages/admin/AdminStudents'
 import AdminSettings from './pages/admin/AdminSettings'
 import AdminDataIntegrity from './pages/admin/AdminDataIntegrity'
+import AdminCourses from './pages/admin/AdminCourses'
+import AdminEnrollments from './pages/admin/AdminEnrollments'
 
 // --- PÁGINA DE PERFIL (COMUM) ---
 import ProfileSettings from './pages/ProfileSetings'
@@ -122,6 +124,8 @@ export default function App() {
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/teachers" element={<AdminTeachers />} />
                   <Route path="/admin/students" element={<AdminStudents />} />
+                  <Route path="/admin/courses" element={<AdminCourses />} />
+                  <Route path="/admin/enrollments" element={<AdminEnrollments />} />
                   <Route path="/admin/data-integrity" element={<AdminDataIntegrity />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
                 </Route>

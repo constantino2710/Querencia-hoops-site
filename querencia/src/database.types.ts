@@ -168,28 +168,40 @@ export type Database = {
       }
       enrollments: {
         Row: {
+          admin_notes: string | null
           course_id: string
           currency: string | null
           enrolled_at: string | null
+          granted_at: string | null
+          granted_by: string | null
           id: string
+          is_admin_grant: boolean
           price_paid_cents: number
           status: Database["public"]["Enums"]["enrollment_status"] | null
           student_id: string
         }
         Insert: {
+          admin_notes?: string | null
           course_id: string
           currency?: string | null
           enrolled_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
           id?: string
+          is_admin_grant?: boolean
           price_paid_cents: number
           status?: Database["public"]["Enums"]["enrollment_status"] | null
           student_id: string
         }
         Update: {
+          admin_notes?: string | null
           course_id?: string
           currency?: string | null
           enrolled_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
           id?: string
+          is_admin_grant?: boolean
           price_paid_cents?: number
           status?: Database["public"]["Enums"]["enrollment_status"] | null
           student_id?: string

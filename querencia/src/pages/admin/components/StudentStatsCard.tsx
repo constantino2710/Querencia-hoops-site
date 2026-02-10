@@ -1,4 +1,4 @@
-import { BookOpen, DollarSign } from 'lucide-react'
+import { BookOpen, DollarSign, Gift } from 'lucide-react'
 
 interface StudentStatsCardProps {
   student: {
@@ -9,12 +9,14 @@ interface StudentStatsCardProps {
     is_active: boolean | null
   }
   stats: {
-    enrollmentsCount: number  // cursos matriculados (ACTIVE)
-    totalSpent: number        // total gasto em centavos
+    enrollmentsCount: number
+    adminGrantsCount: number
+    totalSpent: number
   }
+  onGrantAccess: (studentId: string, studentName: string) => void
 }
 
-export function StudentStatsCard({ student, stats }: StudentStatsCardProps) {
+export function StudentStatsCard({ student, stats, onGrantAccess }: StudentStatsCardProps) {
   const formatBRL = (cents: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100)
 
@@ -55,7 +57,7 @@ export function StudentStatsCard({ student, stats }: StudentStatsCardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border mb-4">
         <div className="text-center">
           <div className="flex items-center justify-center mb-1">
             <BookOpen className="w-4 h-4 text-blue-600" />
@@ -65,12 +67,27 @@ export function StudentStatsCard({ student, stats }: StudentStatsCardProps) {
         </div>
         <div className="text-center">
           <div className="flex items-center justify-center mb-1">
+            <Gift className="w-4 h-4 text-purple-600" />
+          </div>
+          <p className="text-xs text-text-secondary mb-1">Concessões</p>
+          <p className="text-sm font-bold text-text-primary">{stats.adminGrantsCount}</p>
+        </div>
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-1">
             <DollarSign className="w-4 h-4 text-green-600" />
           </div>
-          <p className="text-xs text-text-secondary mb-1">Total Gasto</p>
+          <p className="text-xs text-text-secondary mb-1">Gasto</p>
           <p className="text-sm font-bold text-text-primary">{formatBRL(stats.totalSpent)}</p>
         </div>
       </div>
+
+      <button
+        onClick={() => onGrantAccess(student.id, student.name || student.email)}
+        className="w-full px-4 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-lg text-sm font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors flex items-center justify-center gap-2"
+      >
+        <Gift className="w-4 h-4" />
+        Conceder Acesso
+      </button>
     </div>
   )
 }

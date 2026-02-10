@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import { StatCard } from './components/StatCard'
-import { DollarSign, TrendingUp, UserCog, GraduationCap, BookOpen } from 'lucide-react'
+import { DollarSign, TrendingUp, UserCog, GraduationCap, BookOpen, Gift } from 'lucide-react'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -10,7 +10,8 @@ export default function AdminDashboard() {
     totalSales: 0,
     totalTeachers: 0,
     totalStudents: 0,
-    publishedCourses: 0
+    publishedCourses: 0,
+    adminGrants: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -52,18 +53,27 @@ export default function AdminDashboard() {
         .select('id', { count: 'exact', head: true })
         .eq('status', 'PUBLISHED')
 
-      // 5. Total de vendas ativas (enrollments ACTIVE)
+      // 5. Total de vendas ativas (enrollments ACTIVE, excluindo concessões admin)
       const { count: activeSalesCount } = await supabase
         .from('enrollments')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'ACTIVE')
+        .eq('is_admin_grant', false)
+
+      // 6. Total de concessões admin ativas
+      const { count: adminGrantsCount } = await supabase
+        .from('enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'ACTIVE')
+        .eq('is_admin_grant', true)
 
       setStats({
         totalRevenue: totalPlatformRevenue / 100,
         totalSales: activeSalesCount || 0,
         totalTeachers: teachersCount,
         totalStudents: studentsCount,
-        publishedCourses: publishedCoursesCount || 0
+        publishedCourses: publishedCoursesCount || 0,
+        adminGrants: adminGrantsCount || 0
       })
 
     } catch (error: any) {
@@ -124,6 +134,13 @@ export default function AdminDashboard() {
             icon={<BookOpen className="w-6 h-6" />}
             variant="blue"
             description="Disponíveis na plataforma"
+          />
+          <StatCard
+            title="Concessões Admin"
+            value={stats.adminGrants}
+            icon={<Gift className="w-6 h-6" />}
+            variant="purple"
+            description="Acessos concedidos gratuitamente"
           />
         </div>
       </div>

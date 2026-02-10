@@ -4,7 +4,7 @@ import { supabase } from '../../supabaseClient'
 import { AlertTriangle, CheckCircle, XCircle, Database } from 'lucide-react'
 
 interface DataIssue {
-  type: 'orphan_payment' | 'orphan_enrollment' | 'invalid_student' | 'invalid_course' | 'missing_teacher_earning'
+  type: 'orphan_payment' | 'orphan_enrollment' | 'invalid_student' | 'invalid_course' | 'missing_teacher_earning' | 'admin_grant_with_payment'
   severity: 'high' | 'medium' | 'low'
   description: string
   data: any
@@ -32,7 +32,7 @@ export default function AdminDataIntegrity() {
       // 1. Verificar enrollments
       const { data: enrollments } = await supabase
         .from('enrollments')
-        .select('id, student_id, course_id, status, price_paid_cents, enrolled_at')
+        .select('id, student_id, course_id, status, price_paid_cents, enrolled_at, is_admin_grant')
 
       // 2. Verificar payments
       const { data: payments } = await supabase
@@ -87,10 +87,10 @@ export default function AdminDataIntegrity() {
         }
       })
 
-      // Verificar enrollments sem payment
+      // Verificar enrollments sem payment (excluindo concessões admin)
       const paymentEnrollmentIds = new Set(payments?.map(p => p.enrollment_id) || [])
       enrollments?.forEach(enrollment => {
-        if (!paymentEnrollmentIds.has(enrollment.id) && enrollment.status === 'ACTIVE') {
+        if (!paymentEnrollmentIds.has(enrollment.id) && enrollment.status === 'ACTIVE' && !enrollment.is_admin_grant) {
           foundIssues.push({
             type: 'orphan_enrollment',
             severity: 'medium',
@@ -100,14 +100,26 @@ export default function AdminDataIntegrity() {
         }
       })
 
-      // Verificar enrollments sem teacher_earnings
+      // Verificar enrollments sem teacher_earnings (excluindo concessões admin)
       const earningsEnrollmentIds = new Set(earnings?.map(e => e.enrollment_id) || [])
       enrollments?.forEach(enrollment => {
-        if (!earningsEnrollmentIds.has(enrollment.id) && enrollment.status === 'ACTIVE') {
+        if (!earningsEnrollmentIds.has(enrollment.id) && enrollment.status === 'ACTIVE' && !enrollment.is_admin_grant) {
           foundIssues.push({
             type: 'missing_teacher_earning',
             severity: 'high',
             description: `Enrollment ${enrollment.id.slice(0, 8)} ATIVO sem teacher_earning (professor não recebeu)`,
+            data: enrollment
+          })
+        }
+      })
+
+      // Verificar concessões admin COM payment (inconsistência)
+      enrollments?.forEach(enrollment => {
+        if (enrollment.is_admin_grant && paymentEnrollmentIds.has(enrollment.id)) {
+          foundIssues.push({
+            type: 'admin_grant_with_payment',
+            severity: 'high',
+            description: `Enrollment ${enrollment.id.slice(0, 8)} é concessão admin MAS tem payment associado`,
             data: enrollment
           })
         }
