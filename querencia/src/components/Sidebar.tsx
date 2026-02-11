@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import { SidebarUserProfile, SidebarLogout } from './SidebarUserArea'
-import { LayoutDashboard, Search, BookOpen, Users, UserCog, ChevronLeft, ChevronRight, Settings, Database, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Search, BookOpen, ChevronLeft, ChevronRight, Settings, Database, Info } from 'lucide-react'
 
 interface SidebarProps {
   isCollapsed: boolean
@@ -37,10 +37,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     { label: 'Dashboard', path: '/teacher/dashboard', roles: ['TEACHER'], icon: <LayoutDashboard size={20} /> },
     { label: 'Meus Cursos', path: '/teacher/courses', roles: ['TEACHER'], icon: <BookOpen size={20} /> },
     { label: 'Visão Geral', path: '/admin/dashboard', roles: ['ADMIN'], icon: <LayoutDashboard size={20} /> },
-    { label: 'Cursos', path: '/admin/courses', roles: ['ADMIN'], icon: <BookOpen size={20} /> },
-    { label: 'Professores', path: '/admin/teachers', roles: ['ADMIN'], icon: <UserCog size={20} /> },
-    { label: 'Alunos', path: '/admin/students', roles: ['ADMIN'], icon: <Users size={20} /> },
-    { label: 'Matrículas', path: '/admin/enrollments', roles: ['ADMIN'], icon: <ClipboardList size={20} /> },
+    { label: 'Informações', path: '/admin/info', roles: ['ADMIN'], icon: <Info size={20} /> },
     { label: 'Integridade de Dados', path: '/admin/data-integrity', roles: ['ADMIN'], icon: <Database size={20} /> },
     { label: 'Configurações', path: '/admin/settings', roles: ['ADMIN'], icon: <Settings size={20} /> },
   ]
@@ -59,7 +56,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
               QH
             </div>
-            <h1 className="text-xl font-bold text-text-primary tracking-tight whitespace-nowrap">Hoops Hub</h1>
+            <h1 className="text-xl font-bold text-text-primary tracking-tight whitespace-nowrap">Querênciahoops</h1>
           </div>
         )}
 

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
 import { supabase } from '../../supabaseClient'
-import { TeacherStatsCard } from './components/TeacherStatsCard'
+import { Search } from 'lucide-react'
 
 interface Teacher {
   id: string
@@ -120,50 +120,134 @@ export default function AdminTeachers() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
+  const formatBRL = (cents: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100)
+
+  const getInitials = (name: string) => {
+    const parts = name.split(' ')
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+    return name.substring(0, 2).toUpperCase()
   }
 
+  if (loading) return <div className="p-10 text-center animate-pulse text-text-secondary">Carregando professores...</div>
+
   return (
-    <div className="bg-surface rounded-lg shadow-sm border border-border transition-colors duration-300 h-[calc(100vh-200px)] flex flex-col">
-      {/* Cabeçalho fixo */}
-      <div className="flex-shrink-0 p-6 border-b border-border">
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-text-primary">Professores Cadastrados</h2>
-            <p className="text-sm text-text-secondary mt-1">
-              Total: {teachers.length} professor{teachers.length !== 1 ? 'es' : ''}
-            </p>
-          </div>
+    <div className="h-full flex flex-col">
+      <div className="p-3 md:p-4 border-b border-border flex justify-between items-center bg-gray-50/30 dark:bg-transparent">
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
           <input
             type="text"
             placeholder="Buscar professor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="border border-border bg-background text-text-primary rounded-lg px-4 py-2 text-sm outline-none focus:border-blue-500 transition-colors max-w-xs"
+            className="pl-10 pr-4 py-2 w-full border border-border bg-background rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
           />
         </div>
       </div>
 
-      {/* Área com scroll */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {filteredTeachers.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-text-secondary">
-              {searchTerm ? 'Nenhum professor encontrado com esse termo.' : 'Nenhum professor cadastrado ainda.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex-1 overflow-y-auto">
+        {/* Mobile: Card Layout */}
+        <div className="md:hidden divide-y divide-border">
+          {filteredTeachers.map((teacher) => (
+            <div key={teacher.id} className="p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                {teacher.avatar_url ? (
+                  <img
+                    src={teacher.avatar_url}
+                    alt={teacher.name || 'Professor'}
+                    className="w-10 h-10 rounded-full object-cover border border-border shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
+                    {getInitials(teacher.name || 'ND')}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-text-primary truncate">{teacher.name || 'Nome não disponível'}</div>
+                  <div className="text-xs text-text-secondary truncate">{teacher.email}</div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0 ${
+                  teacher.is_active
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                }`}>
+                  {teacher.is_active ? 'ATIVO' : 'INATIVO'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg p-2">
+                  <p className="text-[10px] text-text-secondary uppercase">Receita</p>
+                  <p className="text-xs font-bold text-text-primary">{formatBRL(teacher.stats.totalRevenue)}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg p-2">
+                  <p className="text-[10px] text-text-secondary uppercase">Cursos</p>
+                  <p className="text-xs font-bold text-text-primary">{teacher.stats.coursesCount}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg p-2">
+                  <p className="text-[10px] text-text-secondary uppercase">Alunos</p>
+                  <p className="text-xs font-bold text-text-primary">{teacher.stats.studentsCount}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <table className="hidden md:table w-full text-left border-collapse">
+          <thead className="sticky top-0 bg-surface shadow-sm z-10">
+            <tr className="border-b border-border">
+              <th className="px-6 py-4 text-xs font-bold text-text-secondary uppercase">Professor</th>
+              <th className="px-6 py-4 text-xs font-bold text-text-secondary uppercase text-center">Status</th>
+              <th className="px-6 py-4 text-xs font-bold text-text-secondary uppercase text-center">Receita</th>
+              <th className="px-6 py-4 text-xs font-bold text-text-secondary uppercase text-center">Cursos</th>
+              <th className="px-6 py-4 text-xs font-bold text-text-secondary uppercase text-center">Alunos</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
             {filteredTeachers.map((teacher) => (
-              <TeacherStatsCard key={teacher.id} teacher={teacher} stats={teacher.stats} />
+              <tr key={teacher.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors group">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-4">
+                    {teacher.avatar_url ? (
+                      <img
+                        src={teacher.avatar_url}
+                        alt={teacher.name || 'Professor'}
+                        className="w-10 h-10 rounded-full object-cover border border-border"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-sm">
+                        {getInitials(teacher.name || 'ND')}
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-sm font-bold text-text-primary group-hover:text-blue-600 transition-colors">{teacher.name || 'Nome não disponível'}</div>
+                      <div className="text-xs text-text-secondary">{teacher.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider ${
+                    teacher.is_active
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                  }`}>
+                    {teacher.is_active ? 'ATIVO' : 'INATIVO'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-center text-sm font-medium text-text-secondary">
+                  {formatBRL(teacher.stats.totalRevenue)}
+                </td>
+                <td className="px-6 py-4 text-center text-sm font-medium text-text-secondary">
+                  {teacher.stats.coursesCount}
+                </td>
+                <td className="px-6 py-4 text-center text-sm font-medium text-text-secondary">
+                  {teacher.stats.studentsCount}
+                </td>
+              </tr>
             ))}
-          </div>
-        )}
+          </tbody>
+        </table>
       </div>
     </div>
   )

@@ -221,9 +221,9 @@ export default function StudentCourseDetails() {
                 <div className="border border-border rounded-xl overflow-hidden divide-y divide-border bg-surface">
                     {course.course_sections.map(section => (
                         <div key={section.id} className="group">
-                            <button 
+                            <button
                                 onClick={() => toggleSection(section.id)}
-                                className="w-full px-6 py-4 flex items-center justify-between hover:bg-background transition-colors text-left"
+                                className="w-full px-4 py-3 md:px-6 md:py-4 flex items-center justify-between hover:bg-background transition-colors text-left"
                             >
                                 <div className="flex items-center gap-3">
                                     <span className="text-sm font-bold opacity-30">{String(section.position).padStart(2, '0')}</span>
@@ -233,7 +233,7 @@ export default function StudentCourseDetails() {
                             </button>
                             
                             {expandedSections[section.id] && (
-                                <div className="bg-background px-6 pb-4 pt-1 space-y-2">
+                                <div className="bg-background px-4 md:px-6 pb-4 pt-1 space-y-2">
                                     {section.lessons?.map(lesson => (
                                         <div key={lesson.id} className="flex items-center justify-between py-2 text-text-secondary pl-8 border-l-2 border-border ml-2">
                                             <span className="text-sm">{lesson.title}</span>
@@ -254,7 +254,7 @@ export default function StudentCourseDetails() {
 
         {/* COLUNA DIREITA - SIDEBAR DE COMPRA/ASSISTIR */}
         <div className="lg:col-span-1">
-          <div className="sticky top-6 space-y-6">
+          <div className="lg:sticky lg:top-6 space-y-6">
               {isEnrolled && progress ? <CourseProgressCard progress={progress} /> : null}
               <div className="bg-surface border border-border rounded-xl shadow-lg overflow-hidden">
                 <div className="aspect-video bg-gray-200 dark:bg-gray-800">

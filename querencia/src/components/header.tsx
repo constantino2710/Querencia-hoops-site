@@ -22,7 +22,7 @@ export function Header() {
     '/profile': 'Meu Perfil',
   }
 
-  const currentTitle = pageTitles[location.pathname] || 'Hoops Hub'
+  const currentTitle = pageTitles[location.pathname] || 'Querênciahoops'
 
   const getBorderColor = () => {
     if (userRoles?.includes('ADMIN')) return 'border-red-500'
@@ -35,7 +35,7 @@ export function Header() {
   return (
     <header className="h-16 bg-surface border-b border-border sticky top-0 z-30 flex items-center justify-between px-4 shadow-sm shrink-0 transition-colors duration-300">
       <div className={`pl-3 border-l-4 ${getBorderColor()}`}>
-        <h2 className="text-xl font-bold text-text-primary">{currentTitle}</h2>
+        <h2 className="text-base md:text-xl font-bold text-text-primary truncate">{currentTitle}</h2>
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">

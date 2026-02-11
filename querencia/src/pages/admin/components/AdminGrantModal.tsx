@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../supabaseClient'
-import { useAuth } from '../../../AuthContext'
 import { X, Search, Gift, AlertCircle } from 'lucide-react'
 
 interface AdminGrantModalProps {
@@ -35,8 +34,6 @@ export function AdminGrantModal({
   preSelectedCourseId,
   preSelectedCourseTitle,
 }: AdminGrantModalProps) {
-  const { session } = useAuth()
-
   const [students, setStudents] = useState<StudentOption[]>([])
   const [courses, setCourses] = useState<CourseOption[]>([])
   const [studentSearch, setStudentSearch] = useState('')
@@ -45,7 +42,6 @@ export function AdminGrantModal({
   const [selectedStudentLabel, setSelectedStudentLabel] = useState('')
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [selectedCourseLabel, setSelectedCourseLabel] = useState('')
-  const [notes, setNotes] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -67,21 +63,19 @@ export function AdminGrantModal({
   }, [isOpen, preSelectedStudentId, preSelectedStudentName, preSelectedCourseId, preSelectedCourseTitle])
 
   useEffect(() => {
+    if (!isOpen) return
+    if (!preSelectedStudentId) fetchStudents('')
+    if (!preSelectedCourseId) fetchCourses('')
+  }, [isOpen, preSelectedStudentId, preSelectedCourseId])
+
+  useEffect(() => {
     if (!isOpen || preSelectedStudentId) return
-    if (studentSearch.trim().length < 2) {
-      setStudents([])
-      return
-    }
     const timeout = setTimeout(() => fetchStudents(studentSearch.trim()), 300)
     return () => clearTimeout(timeout)
   }, [studentSearch, isOpen, preSelectedStudentId])
 
   useEffect(() => {
     if (!isOpen || preSelectedCourseId) return
-    if (courseSearch.trim().length < 2) {
-      setCourses([])
-      return
-    }
     const timeout = setTimeout(() => fetchCourses(courseSearch.trim()), 300)
     return () => clearTimeout(timeout)
   }, [courseSearch, isOpen, preSelectedCourseId])
@@ -93,7 +87,6 @@ export function AdminGrantModal({
     setSelectedCourseLabel('')
     setStudentSearch('')
     setCourseSearch('')
-    setNotes('')
     setShowConfirm(false)
     setError(null)
     setStudents([])
@@ -111,27 +104,74 @@ export function AdminGrantModal({
     const studentIds = studentRoles?.map((sr) => sr.user_id) || []
     if (studentIds.length === 0) return
 
-    const { data } = await supabase
+    // Buscar alunos que já têm matrícula ativa no curso selecionado
+    let enrolledStudentIds: string[] = []
+    const courseId = preSelectedCourseId || selectedCourseId
+    if (courseId) {
+      const { data: activeEnrollments } = await supabase
+        .from('enrollments')
+        .select('student_id')
+        .eq('course_id', courseId)
+        .eq('status', 'ACTIVE')
+      enrolledStudentIds = activeEnrollments?.map((e) => e.student_id) || []
+    }
+
+    // Filtrar alunos já matriculados
+    const availableIds = studentIds.filter((id) => !enrolledStudentIds.includes(id))
+    if (availableIds.length === 0) {
+      setStudents([])
+      return
+    }
+
+    let query = supabase
       .from('users')
       .select('id, name, email')
-      .in('id', studentIds)
-      .or(`name.ilike.%${term}%,email.ilike.%${term}%`)
-      .limit(10)
+      .in('id', availableIds)
+      .limit(50)
 
+    if (term) {
+      query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%`)
+    }
+
+    const { data } = await query
     setStudents(data || [])
   }
 
   async function fetchCourses(term: string) {
-    const { data } = await supabase
+    // Buscar cursos que o aluno já tem matrícula ativa
+    let enrolledCourseIds: string[] = []
+    const studentId = preSelectedStudentId || selectedStudentId
+    if (studentId) {
+      const { data: activeEnrollments } = await supabase
+        .from('enrollments')
+        .select('course_id')
+        .eq('student_id', studentId)
+        .eq('status', 'ACTIVE')
+      enrolledCourseIds = activeEnrollments?.map((e) => e.course_id) || []
+    }
+
+    let query = supabase
       .from('courses')
       .select('id, title, teacher_id')
       .eq('status', 'PUBLISHED')
-      .ilike('title', `%${term}%`)
-      .limit(10)
+      .limit(50)
 
+    if (term) {
+      query = query.ilike('title', `%${term}%`)
+    }
+
+    const { data } = await query
     if (!data) return
 
-    const teacherIds = [...new Set(data.map((c) => c.teacher_id))]
+    // Filtrar cursos já matriculados
+    const availableCourses = data.filter((c) => !enrolledCourseIds.includes(c.id))
+
+    const teacherIds = [...new Set(availableCourses.map((c) => c.teacher_id))]
+    if (teacherIds.length === 0) {
+      setCourses([])
+      return
+    }
+
     const { data: teachers } = await supabase
       .from('users')
       .select('id, name')
@@ -140,7 +180,7 @@ export function AdminGrantModal({
     const teacherMap = new Map(teachers?.map((t) => [t.id, t.name]) || [])
 
     setCourses(
-      data.map((c) => ({
+      availableCourses.map((c) => ({
         id: c.id,
         title: c.title,
         teacher_name: teacherMap.get(c.teacher_id) || null,
@@ -149,7 +189,7 @@ export function AdminGrantModal({
   }
 
   async function handleGrant() {
-    if (!selectedStudentId || !selectedCourseId || !session?.user?.id) return
+    if (!selectedStudentId || !selectedCourseId) return
 
     setLoading(true)
     setError(null)
@@ -158,7 +198,7 @@ export function AdminGrantModal({
       // Verifica se já existe matrícula
       const { data: existing } = await supabase
         .from('enrollments')
-        .select('id, status, is_admin_grant')
+        .select('id, status')
         .eq('student_id', selectedStudentId)
         .eq('course_id', selectedCourseId)
         .maybeSingle()
@@ -175,11 +215,7 @@ export function AdminGrantModal({
           .from('enrollments')
           .update({
             status: 'ACTIVE',
-            is_admin_grant: true,
             price_paid_cents: 0,
-            granted_by: session.user.id,
-            granted_at: new Date().toISOString(),
-            admin_notes: notes || null,
           })
           .eq('id', existing.id)
 
@@ -192,10 +228,6 @@ export function AdminGrantModal({
           status: 'ACTIVE',
           price_paid_cents: 0,
           currency: 'BRL',
-          is_admin_grant: true,
-          granted_by: session.user.id,
-          granted_at: new Date().toISOString(),
-          admin_notes: notes || null,
         })
 
         if (insertError) throw insertError
@@ -216,7 +248,7 @@ export function AdminGrantModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-surface border border-border rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-4 md:p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <Gift className="w-5 h-5 text-purple-600" />
@@ -228,7 +260,7 @@ export function AdminGrantModal({
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-4 md:p-6 space-y-5">
           {/* Seleção de Aluno */}
           <div>
             <label className="block text-sm font-semibold text-text-primary mb-2">Aluno</label>
@@ -266,9 +298,9 @@ export function AdminGrantModal({
                     className="w-full pl-10 pr-4 py-3 border border-border bg-background text-text-primary rounded-lg text-sm outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
-                {showStudentDropdown && students.length > 0 && (
+                {showStudentDropdown && (
                   <div className="absolute z-10 w-full mt-1 bg-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {students.map((s) => (
+                    {students.length > 0 ? students.map((s) => (
                       <button
                         key={s.id}
                         onClick={() => {
@@ -281,7 +313,9 @@ export function AdminGrantModal({
                         <p className="text-sm font-medium text-text-primary">{s.name || 'Sem nome'}</p>
                         <p className="text-xs text-text-secondary">{s.email}</p>
                       </button>
-                    ))}
+                    )) : (
+                      <p className="px-4 py-3 text-sm text-text-secondary">Nenhum aluno encontrado</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -325,9 +359,9 @@ export function AdminGrantModal({
                     className="w-full pl-10 pr-4 py-3 border border-border bg-background text-text-primary rounded-lg text-sm outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
-                {showCourseDropdown && courses.length > 0 && (
+                {showCourseDropdown && (
                   <div className="absolute z-10 w-full mt-1 bg-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {courses.map((c) => (
+                    {courses.length > 0 ? courses.map((c) => (
                       <button
                         key={c.id}
                         onClick={() => {
@@ -342,25 +376,13 @@ export function AdminGrantModal({
                           <p className="text-xs text-text-secondary">Prof. {c.teacher_name}</p>
                         )}
                       </button>
-                    ))}
+                    )) : (
+                      <p className="px-4 py-3 text-sm text-text-secondary">Nenhum curso encontrado</p>
+                    )}
                   </div>
                 )}
               </div>
             )}
-          </div>
-
-          {/* Notas */}
-          <div>
-            <label className="block text-sm font-semibold text-text-primary mb-2">
-              Motivo da Concessão <span className="text-text-secondary font-normal">(opcional)</span>
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Bolsista, cortesia, teste..."
-              rows={2}
-              className="w-full px-4 py-3 border border-border bg-background text-text-primary rounded-lg text-sm outline-none focus:border-blue-500 transition-colors resize-none"
-            />
           </div>
 
           {/* Erro */}
@@ -384,7 +406,7 @@ export function AdminGrantModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+        <div className="flex items-center justify-end gap-3 p-4 md:p-6 border-t border-border">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
