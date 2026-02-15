@@ -176,7 +176,7 @@ export default function AdminStudents() {
                   setSelectedStudentName(student.name || student.email)
                   setGrantModalOpen(true)
                 }}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 transition-all"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all"
               >
                 <Plus size={14} /> Conceder Acesso
               </button>
@@ -239,7 +239,7 @@ export default function AdminStudents() {
                       setSelectedStudentName(student.name || student.email)
                       setGrantModalOpen(true)
                     }}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 transition-all shadow-sm hover:shadow-md"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all shadow-sm hover:shadow-md"
                   >
                     <Plus size={14} /> Conceder Acesso
                   </button>

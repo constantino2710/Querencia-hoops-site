@@ -420,7 +420,7 @@ export function AdminGrantModal({
                 setShowConfirm(true)
               }}
               disabled={!selectedStudentId || !selectedCourseId}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Conceder Acesso
             </button>
@@ -428,7 +428,7 @@ export function AdminGrantModal({
             <button
               onClick={handleGrant}
               disabled={loading}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50"
+              className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
             >
               {loading ? 'Concedendo...' : 'Confirmar Concessão'}
             </button>

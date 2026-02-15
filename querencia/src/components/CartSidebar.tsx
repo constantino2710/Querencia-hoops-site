@@ -88,7 +88,7 @@ export function CartSidebar() {
               type="button"
               onClick={checkout}
               disabled={items.length === 0 || isCheckingOut}
-              className="w-full rounded-lg bg-blue-600 py-4 text-white font-bold shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all active:scale-95"
+              className="w-full rounded-lg bg-black dark:bg-white py-4 text-white dark:text-black font-bold shadow-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all active:scale-95"
             >
               {isCheckingOut ? (
                 <>

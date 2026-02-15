@@ -36,9 +36,14 @@ serve(async (req) => {
     }
 
     const PAGARME_API_KEY = Deno.env.get('PAGARME_API_KEY')
-    
+    const PAGARME_RECIPIENT_ID = Deno.env.get('PAGARME_RECIPIENT_ID')
+
     if (!PAGARME_API_KEY) {
       throw new Error("PAGARME_API_KEY não configurada")
+    }
+
+    if (!PAGARME_RECIPIENT_ID) {
+      throw new Error("PAGARME_RECIPIENT_ID não configurada")
     }
 
     const authHeader = `Basic ${btoa(`${PAGARME_API_KEY}:`)}`
@@ -49,11 +54,11 @@ serve(async (req) => {
         name: customer.name,
         email: customer.email
       },
-      items: [{ 
-        amount, 
-        description: "Matrícula Querência Hoops", 
-        quantity: 1, 
-        code: "MATRICULA" 
+      items: [{
+        amount,
+        description: "Matrícula Querência Hoops",
+        quantity: 1,
+        code: "MATRICULA"
       }],
       payments: [{
         payment_method: "checkout",
@@ -65,7 +70,17 @@ serve(async (req) => {
           customer_editable: true,
           billing_address_editable: true,
           pix: { expires_in: 3600 }
-        }
+        },
+        split: [{
+          amount: 95,
+          recipient_id: PAGARME_RECIPIENT_ID,
+          type: "percentage",
+          options: {
+            charge_processing_fee: true,
+            charge_remainder_fee: true,
+            liable: true
+          }
+        }]
       }]
     }
 

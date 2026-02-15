@@ -53,7 +53,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       <div className="h-16 flex items-center justify-between px-3 md:px-4 border-b border-border shrink-0 overflow-hidden">
         {!isCompact && (
           <div className="flex items-center gap-2 animate-in fade-in duration-300">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+            <div className="w-8 h-8 bg-black dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black text-sm font-bold shadow-sm">
               QH
             </div>
             <h1 className="text-xl font-bold text-text-primary tracking-tight whitespace-nowrap">Querênciahoops</h1>

@@ -5,24 +5,24 @@
 @layer base {
   :root {
     /* --- MODO CLARO (LIGHT) --- */
-    --background: 243 244 246;
+    --background: 250 250 250;
     --surface: 255 255 255;
-    --text-primary: 31 41 55;
-    --text-secondary: 75 85 99;
-    --border: 229 231 235;
-    --sidebar-bg: 17 24 39;
+    --text-primary: 10 10 10;
+    --text-secondary: 100 100 100;
+    --border: 230 230 230;
+    --sidebar-bg: 10 10 10;
     --sidebar-text: 255 255 255;
   }
 
   .dark {
     /* --- MODO ESCURO (DARK) --- */
-    --background: 17 24 39;
-    --surface: 31 41 55;
-    --text-primary: 243 244 246;
-    --text-secondary: 156 163 175;
-    --border: 55 65 81;
+    --background: 5 5 5;
+    --surface: 18 18 18;
+    --text-primary: 245 245 245;
+    --text-secondary: 160 160 160;
+    --border: 40 40 40;
     --sidebar-bg: 0 0 0;
-    --sidebar-text: 229 231 235;
+    --sidebar-text: 240 240 240;
   }
 
   /* Scrollbar Customizada Global */
