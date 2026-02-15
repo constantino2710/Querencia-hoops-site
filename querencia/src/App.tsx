@@ -6,6 +6,8 @@ import { CartProvider } from './CartContext'
 import { Layout } from './layout'
 import { Login } from './pages/login'
 import { Register } from './pages/register'
+import { ForgotPassword } from './pages/ForgotPassword'
+import { ResetPassword } from './pages/ResetPassword'
 
 // --- PÁGINAS DO ALUNO ---
 import StudentExplore from './pages/student/StudentExplore'
@@ -86,6 +88,8 @@ export default function App() {
               {/* --- ROTAS PÚBLICAS --- */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
 
               {/* --- ROTAS PROTEGIDAS (COM SIDEBAR/LAYOUT) --- */}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../supabaseClient'
 import { useTheme } from '../ThemeContext'
 
@@ -11,6 +12,7 @@ export function Register() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,15 +100,24 @@ export function Register() {
 
           <div>
             <label className="block mb-1.5 text-sm font-semibold text-text-secondary">Senha</label>
-            <input
-              type="password"
-              placeholder="Mínimo 6 caracteres"
-              className="w-full p-3 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-base"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Mínimo 6 caracteres"
+                className="w-full p-3 pr-11 rounded-lg border border-border bg-background text-text-primary focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-base"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button
