@@ -70,17 +70,17 @@ serve(async (req) => {
           customer_editable: true,
           billing_address_editable: true,
           pix: { expires_in: 3600 }
-        },
-        split: [{
-          amount: 95,
-          recipient_id: PAGARME_RECIPIENT_ID,
-          type: "percentage",
-          options: {
-            charge_processing_fee: true,
-            charge_remainder_fee: true,
-            liable: true
-          }
-        }]
+        }
+      }],
+      split: [{
+        amount: 100,
+        recipient_id: PAGARME_RECIPIENT_ID,
+        type: "percentage",
+        options: {
+          charge_processing_fee: true,
+          charge_remainder_fee: true,
+          liable: true
+        }
       }]
     }
 
@@ -121,6 +121,7 @@ serve(async (req) => {
     }
 
     console.log("✅ Order criada na Pagar.me:", order.id)
+    console.log("📋 Resposta completa Pagar.me:", JSON.stringify(order, null, 2))
 
     // Salvar o vínculo na tabela payments para cada enrollment
     console.log("💾 Salvando payments no banco de dados...")
